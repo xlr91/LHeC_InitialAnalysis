@@ -56,6 +56,17 @@ TH1D * h_Lepton_Pt;
 TH1D * h_Jet_Pt;
 TH1D * h_ZZ_Mass;
 
+//my graphs
+TH1D * h_e_eta;
+TH1D * h_nue_eta;
+TH1D * h_Jet_eta;
+TH1D * h_Z_eta;
+
+TH1D * h_e_Et;
+TH1D * h_nue_Et;
+TH1D * h_Jet_Et;
+TH1D * h_Z_Et;
+
 ExRootTreeReader * InitReader(const TString FilePath);
 
 void Process(ExRootTreeReader * treeReader);
