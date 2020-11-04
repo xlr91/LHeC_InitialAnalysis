@@ -23,8 +23,11 @@ The program takes two arguments, the first is the input simulation file and the 
 
 (where you will need to substitute these dummy arguments with the appropriate path to the input file and your chosen name for the output file)
 
-the path to input file is 
+the path to the first input file is 
 /disk/moose/general/asc/Y4_LHeC_2021/LHeC_CC_H4l.Delphes.root
+
+the second one is
+/disk/moose/general/asc/Y4_LHeC_2021/LHeC_CC_H4l.Had.Delphes.root
 
 # Making changes to the code
 

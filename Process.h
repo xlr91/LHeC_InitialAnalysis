@@ -61,6 +61,7 @@ TH1D * h_e_eta;
 TH1D * h_nue_eta;
 TH1D * h_Jet_eta;
 TH1D * h_Z_eta;
+TH1D * h_H_eta;
 
 TH1D * h_e_Et;
 TH1D * h_nue_Et;

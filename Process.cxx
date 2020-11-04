@@ -1,5 +1,6 @@
 
 #include "Process.h"
+#include "TLine.h"
 
 bool Debug = false; 
 
@@ -40,6 +41,7 @@ int main(int argc, char* argv[]) {
     h_e_eta = new TH1D("h_e_eta","; Electron eta ; Events / 5 GeV", 50, -9.0, 1.0);
     h_nue_eta = new TH1D("h_nue_eta","; Electron neutrino eta ; Events / 5 GeV", 50, -7.0, 3.0);
     h_Z_eta = new TH1D("h_Z_eta","; Boson eta ; Events / 5 GeV", 50, -10.0, 0.0);
+    h_H_eta = new TH1D("h_H_eta","; Higgs eta ; Events / 5 GeV", 100, -10.0, 10.0);
 
     
     h_Jet_Et = new TH1D("h_Jet_Et","; Jet Transverse Energy ; Events / 5 GeV", 50, 0, 200);
@@ -75,10 +77,24 @@ int main(int argc, char* argv[]) {
 
 
 
+    //draw lines here
+
+    TCanvas *c1 = new TCanvas("c1"," Efficiency ",50,50,1680,1050);
+    h_Jet_eta -> Draw();
+    TLine *line1 = new TLine(-5,0,-5,2000);
+    line1->SetLineColor(kRed);
+    line1->Draw("same");
+    c1 -> Print("testing.png");
+
+    //Save things
+
     h_Jet_eta -> Write();
     h_e_eta -> Write();
     h_nue_eta -> Write();
     h_Z_eta -> Write();
+    h_H_eta -> Write();
+
+
 
     h_Jet_Et -> Write();
     h_e_Et -> Write();
@@ -176,8 +192,8 @@ void Process(ExRootTreeReader * treeReader) {
 
             GenParticle* lep = (GenParticle*) bTruthLepton->At(i);
 
-            if(Debug) std::cout << "Lepton " << i << " PID = " << lep-> PID << " pT = " << lep->PT << " eta = " << lep->Eta << " phi = " << lep->Phi << " mass = " << lep->Mass
-                <<  std::endl;
+            if(Debug) std::cout << "Lepton " << i << " pT = " << lep->PT << " eta = " << lep->Eta << " phi = " << lep->Phi << " PID = " << lep-> PID << " mass = " << lep->Mass
+                << " Mother: " << lep->M1 <<  std::endl;
 
             
             TLorentzVector Vec_Lepton;
@@ -211,13 +227,21 @@ void Process(ExRootTreeReader * treeReader) {
             
             GenParticle* v = (GenParticle*) bTruthWZ->At(i);
             
-            if(Debug) std::cout << "Boson " << i << " pT = " << v->PT << " eta = " << v->Eta << " phi = " << v->Phi << " mass = " << v->Mass 
-                << std::endl;
+            if(Debug) std::cout << "Boson " << i << " pT = " << v->PT << " eta = " << v->Eta << " phi = " << v->Phi << " PID = " << v-> PID << " mass = " << v->Mass 
+                << " Daughter: " << v->D1 <<  std::endl;
         
         
             TLorentzVector Vec_V;
             Vec_V.SetPtEtaPhiM(v->PT,v->Eta,v->Phi,v->Mass);
-        
+
+
+            
+            if (v -> Mass == 125){
+                h_H_eta -> Fill( v->Eta, Event_Weight);
+            }
+            
+            
+
     		// Look for Z bosons (ID = 23)
             if( v->PID == 23 ) {
                 h_Z_Pt->Fill( Vec_V.Pt(), Event_Weight );
