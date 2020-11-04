@@ -14,6 +14,7 @@
 #include "TSystemDirectory.h"
 #include "TSystemFile.h"
 #include "TVector3.h"
+#include "TEfficiency.h"
 
 #include <iostream>
 #include <utility>
@@ -68,6 +69,11 @@ TH1D * h_nue_Et;
 TH1D * h_Jet_Et;
 TH1D * h_Z_Et;
 
+//TEfficiency for acceptance
+TEfficiency * t_e_eta;
+TEfficiency * t_e_Et;
+
+
 ExRootTreeReader * InitReader(const TString FilePath);
 
 void Process(ExRootTreeReader * treeReader);
@@ -75,3 +81,6 @@ void Process(ExRootTreeReader * treeReader);
 void ClearBranches();
 
 int main(int argc, char* argv[]);
+
+bool LepPass(GenParticle* lep_b);
+

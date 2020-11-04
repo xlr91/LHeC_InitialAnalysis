@@ -4,6 +4,18 @@
 
 bool Debug = false; 
 
+bool LepPass(GenParticle* lep_b){
+    //Parameters
+    double etamin = -5 ;
+    double etamax = 5;
+
+    //selection criteria
+    if( etamin < lep_b -> Eta && lep_b -> Eta<  etamax ){
+        return true;
+    }
+    return false;
+}  
+
 int main(int argc, char* argv[]) {
 
     // Input Delphes File
@@ -37,18 +49,22 @@ int main(int argc, char* argv[]) {
     h_Jet_Pt = new TH1D("h_Jet_Pt","; Jet p_{T} [GeV]; Events / 5 GeV",200,0.0,1000.0);
     h_ZZ_Mass = new TH1D("h_ZZ_Mass","; ZZ Mass [GeV]; Events / 2 GeV",125,0.0,250.0);
 
-    h_Jet_eta = new TH1D("h_Jet_eta","; Jet eta ; Events / 5 GeV", 50, -10.0, 0.0);
-    h_e_eta = new TH1D("h_e_eta","; Electron eta ; Events / 5 GeV", 50, -9.0, 1.0);
-    h_nue_eta = new TH1D("h_nue_eta","; Electron neutrino eta ; Events / 5 GeV", 50, -7.0, 3.0);
-    h_Z_eta = new TH1D("h_Z_eta","; Boson eta ; Events / 5 GeV", 50, -10.0, 0.0);
-    h_H_eta = new TH1D("h_H_eta","; Higgs eta ; Events / 5 GeV", 100, -10.0, 10.0);
+    h_Jet_eta = new TH1D("h_Jet_eta","; Jet eta ; Events", 50, -10.0, 0.0);
+    h_e_eta = new TH1D("h_e_eta","; Electron eta ; Events", 50, -9.0, 1.0);
+    h_nue_eta = new TH1D("h_nue_eta","; Electron neutrino eta ; Events", 50, -7.0, 3.0);
+    h_Z_eta = new TH1D("h_Z_eta","; Boson eta ; Events", 50, -10.0, 0.0);
+    h_H_eta = new TH1D("h_H_eta","; Higgs eta ; Events", 100, -10.0, 10.0);
 
     
-    h_Jet_Et = new TH1D("h_Jet_Et","; Jet Transverse Energy ; Events / 5 GeV", 50, 0, 200);
-    h_e_Et = new TH1D("h_e_Et","; Electron Transverse Energy; Events / 5 GeV", 50, 0, 150);
-    h_nue_Et = new TH1D("h_nue_Et","; Electron Neutrino Transverse Energy; Events / 5 GeV", 50, 0, 250);
-    h_Z_Et = new TH1D("h_Z_Et","; Boson Transverse Energy ; Events / 5 GeV", 50, 0, 250);
-    
+    h_Jet_Et = new TH1D("h_Jet_Et","; Jet Transverse Energy ; Events", 50, 0, 200);
+    h_e_Et = new TH1D("h_e_Et","; Electron Transverse Energy; Events", 50, 0, 150);
+    h_nue_Et = new TH1D("h_nue_Et","; Electron Neutrino Transverse Energy; Events", 50, 0, 250);
+    h_Z_Et = new TH1D("h_Z_Et","; Boson Transverse Energy ; Events", 50, 0, 250);
+
+    t_e_eta = new TEfficiency("t_e_eta","Acceptance of Electron vs Eta ; Eta; Acceptance",100,-10,10);
+    t_e_Et = new TEfficiency("t_e_Et","Acceptance of Electron vs Transverse Energy ; Et; Acceptance", 50 , 0, 150);
+
+
 
     
 
@@ -95,11 +111,14 @@ int main(int argc, char* argv[]) {
     h_H_eta -> Write();
 
 
-
     h_Jet_Et -> Write();
     h_e_Et -> Write();
     h_nue_Et -> Write();
     h_Z_Et -> Write();
+
+
+    t_e_eta -> Write(); 
+    t_e_Et -> Write(); 
 
 
     OutputFile->Close();
@@ -201,14 +220,20 @@ void Process(ExRootTreeReader * treeReader) {
             
 
             // Look for electrons or muons
-            if( abs(lep->PID) == 11 || abs(lep->PID) == 13 ) { //oh hey PID exists here nice
-
+            if( abs(lep->PID) == 11 || abs(lep->PID) == 13 ) {
                 h_Lepton_Pt->Fill( Vec_Lepton.Pt(), Event_Weight );  
             }
 
             if( abs(lep->PID) == 11) {
                 h_e_eta -> Fill( lep-> Eta ,Event_Weight);
                 h_e_Et -> Fill( TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)), Event_Weight);
+                
+                t_e_eta -> FillWeighted(LepPass(lep), Event_Weight, lep->Eta);
+                t_e_Et -> FillWeighted(LepPass(lep), Event_Weight, TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)));
+                
+                
+                //if (Debug) std::cout << "Selection result: " << LepPass(lep) << std::endl;
+
             }
 
             if( abs(lep->PID) == 12) {
