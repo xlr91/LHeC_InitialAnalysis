@@ -49,29 +49,43 @@ TClonesArray * bJet;
 // Output
 TFile * OutputFile;
 
-TH1D * h_EventCount;
-TH1D * h_WeightCount;
+TH1D * hEx_EventCount;
+TH1D * hEx_WeightCount;
 
-TH1D * h_Z_Pt;
-TH1D * h_Lepton_Pt;
-TH1D * h_Jet_Pt;
-TH1D * h_ZZ_Mass;
+TH1D * hEx_Z_Pt;
+TH1D * hEx_Lepton_Pt;
+TH1D * hEx_Jet_Pt;
+TH1D * hEx_ZZ_Mass;
 
-//my graphs
-TH1D * h_e_eta;
-TH1D * h_nue_eta;
-TH1D * h_Jet_eta;
-TH1D * h_Z_eta;
-TH1D * h_H_eta;
+//Particle level graphs
+TH1D * hPr_e_eta;
+TH1D * hPr_nue_eta;
+TH1D * hPr_Jet_eta;
+TH1D * hPr_Z_eta;
+TH1D * hPr_H_eta;
 
-TH1D * h_e_Et;
-TH1D * h_nue_Et;
-TH1D * h_Jet_Et;
-TH1D * h_Z_Et;
+TH1D * hPr_e_Et;
+TH1D * hPr_nue_Et;
+TH1D * hPr_Jet_Et;
+TH1D * hPr_Z_Et;
 
-//TEfficiency for acceptance
-TEfficiency * t_e_eta;
-TEfficiency * t_e_Et;
+TEfficiency * tPr_e_eta;
+TEfficiency * tPr_e_Et;
+
+
+//4e event level graphs
+TH1D * hEv_e_eta_nocuts;
+TH1D * hEv_e_eta_wicuts;
+TH1D * hEv_nue_eta;
+TH1D * hEv_e_Et_nocuts;
+TH1D * hEv_e_Et_wicuts;
+TH1D * hEv_nue_Et;
+
+
+
+TEfficiency * tEv_e_eta;
+TEfficiency * tEv_e_Et;
+            
 
 
 ExRootTreeReader * InitReader(const TString FilePath);
