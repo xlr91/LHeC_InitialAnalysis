@@ -1,0 +1,7 @@
+.DS_store
+.vscode
+.nfs*
+output.*
+LHeC_CC_H4l.Had.Delphes.root
+Process
+Graphs/*
