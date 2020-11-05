@@ -2,15 +2,16 @@
 #include "Process.h"
 #include "TLine.h"
 
-bool Debug = false; 
+bool Debug = true; 
 
 bool LepPass(GenParticle* lep_b){
     //Parameters
     double etamin = -5 ;
     double etamax = 5;
+    double ptmin = 15;
 
     //selection criteria
-    if( etamin < lep_b -> Eta && lep_b -> Eta<  etamax ){
+    if( etamin < lep_b -> Eta && lep_b -> Eta<  etamax && ptmin < lep_b -> PT){
         return true;
     }
     return false;
@@ -50,8 +51,8 @@ int main(int argc, char* argv[]) {
     h_ZZ_Mass = new TH1D("h_ZZ_Mass","; ZZ Mass [GeV]; Events / 2 GeV",125,0.0,250.0);
 
     h_Jet_eta = new TH1D("h_Jet_eta","; Jet eta ; Events", 50, -10.0, 0.0);
-    h_e_eta = new TH1D("h_e_eta","; Electron eta ; Events", 50, -9.0, 1.0);
-    h_nue_eta = new TH1D("h_nue_eta","; Electron neutrino eta ; Events", 50, -7.0, 3.0);
+    h_e_eta = new TH1D("h_e_eta","; Electron eta ; Events", 50, -7.0, 3.0);
+    h_nue_eta = new TH1D("h_nue_eta","; Electron neutrino eta ; Events", 50, -5.0, 5.0);
     h_Z_eta = new TH1D("h_Z_eta","; Boson eta ; Events", 50, -10.0, 0.0);
     h_H_eta = new TH1D("h_H_eta","; Higgs eta ; Events", 100, -10.0, 10.0);
 
