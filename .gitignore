@@ -3,5 +3,7 @@
 .nfs*
 output.*
 LHeC_CC_H4l.Had.Delphes.root
+LHeC_CC_H4l.Had.Delphes.v2.root
+LHeC_CC_H4l.Parton.Delphes.v2.root
 Process
 Graphs/*

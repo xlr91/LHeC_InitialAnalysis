@@ -44,6 +44,9 @@ TClonesArray * bEvent;
 TClonesArray * bTruthLepton;
 TClonesArray * bTruthWZ;
 TClonesArray * bJet;
+TClonesArray * bParticle;
+
+
 
 
 // Output
@@ -69,22 +72,26 @@ TH1D * hPr_nue_Et;
 TH1D * hPr_Jet_Et;
 TH1D * hPr_Z_Et;
 
-TEfficiency * tPr_e_eta;
-TEfficiency * tPr_e_Et;
+TEfficiency * aPr_e_eta;
+TEfficiency * aPr_e_Et;
 
 
 //4e event level graphs
 TH1D * hEv_e_eta_nocuts;
 TH1D * hEv_e_eta_wicuts;
-TH1D * hEv_nue_eta;
 TH1D * hEv_e_Et_nocuts;
 TH1D * hEv_e_Et_wicuts;
+TH1D * hEv_nue_eta;
 TH1D * hEv_nue_Et;
+TH1D * hEv_MET_eta;
+TH1D * hEv_MET_Et;
+
+TH2D * hEv_e_eta_pt;
 
 
 
-TEfficiency * tEv_e_eta;
-TEfficiency * tEv_e_Et;
+TEfficiency * aEv_e_eta;
+TEfficiency * aEv_e_Et;
             
 
 
