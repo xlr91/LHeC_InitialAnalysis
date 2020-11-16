@@ -15,6 +15,7 @@
 #include "TSystemFile.h"
 #include "TVector3.h"
 #include "TEfficiency.h"
+#include "TLine.h"
 
 #include <iostream>
 #include <utility>
@@ -81,14 +82,19 @@ TH1D * hEv_e_eta_nocuts;
 TH1D * hEv_e_eta_wicuts;
 TH1D * hEv_e_Et_nocuts;
 TH1D * hEv_e_Et_wicuts;
-TH1D * hEv_nue_eta;
-TH1D * hEv_nue_Et;
+TH1D * hEv_nue_eta_nocuts;
+TH1D * hEv_nue_Et_nocuts;
+TH1D * hEv_nue_eta_wicuts;
+TH1D * hEv_nue_Et_wicuts;
 TH1D * hEv_MET_eta;
 TH1D * hEv_MET_Et;
 
 TH2D * hEv_e_eta_pt;
 
+TH2D * hEv_nue_eta_pt_wicuts;
+TH2D * hEv_MET_eta_pt;
 
+TEfficiency * aEv_H_eta;
 
 TEfficiency * aEv_e_eta;
 TEfficiency * aEv_e_Et;
@@ -104,4 +110,4 @@ void ClearBranches();
 int main(int argc, char* argv[]);
 
 bool LepPass(GenParticle* lep_b);
-
+//double jetlepdR (TLorentzVector jet_v, TLorentzVector lep_v)
