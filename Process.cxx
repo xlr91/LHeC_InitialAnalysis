@@ -8,7 +8,7 @@ theres making a 2d plot of the MET/nue eta and pt to check it
 and then theres making an acceptance for the MET somehow, this one is going to be a big hassle
 */
 
-bool Debug = false;
+bool Debug = true;
 
 bool LepPass(GenParticle* lep_b){
     //Checks if the electron can be seen by the detector or not
@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
     hEv_nue_Et_nocuts = new TH1D("hEv_nue_Et_nocuts","Electron Neutrino (4e, no cuts) particles vs transverse energy; Electron Neutrino E_{T}; Number of Particles", 50, 0, 250);
     hEv_nue_eta_wicuts = new TH1D("hEv_nue_eta_wicuts","Electron Neutrino (4e, with cuts and jet check) particles vs pseudorapidity; Electron neutrino #eta; Number of Particles", 50, -5.0, 5.0);
     hEv_nue_Et_wicuts = new TH1D("hEv_nue_Et_wicuts","Electron Neutrino (4e, with cuts and jet check) particles vs transverse energy; Electron Neutrino E_{T}; Number of Particles", 50, 0, 250);
-    hEv_MET_eta = new TH1D("hEv_MET_eta","Missing Energy Particle (with all cuts) vs pseudorapidity; MET #eta; Number of Particles", 50, -5.0, 5.0);
+    hEv_MET_eta = new TH1D("hEv_MET_eta","Missing Energy Particle (with all cuts) vs pseudorapidity; MET #eta; Number of Particles", 50, 0, 10.0);
     hEv_MET_Et = new TH1D("hEv_MET_Et","Missing Energy Particle (with all cuts) vs transverse energy; MET E_{T}; Number of Particles", 50, 0, 250);
     aEv_e_eta = new TEfficiency("aEv_e_eta","Acceptance of Electron vs Eta (4e events); Eta; Acceptance",100,-10,10);
     aEv_e_Et = new TEfficiency("aEv_e_Et","Acceptance of Electron vs Transverse Energy (4e events); Et; Acceptance", 50 , 0, 150);
@@ -96,6 +96,9 @@ int main(int argc, char* argv[]) {
     hEv_e_eta_pt = new TH2D("hEv_e_eta_pt","", 50, -7.0, 3.0, 50, 0., 150.);
     hEv_nue_eta_pt_wicuts = new TH2D("hEv_nue_eta_pt_wicuts","", 50, -10.0, 10.0, 50, 0., 250.);
     hEv_MET_eta_pt = new TH2D("hEv_MET_eta_pt","", 50, -10.0, 10.0, 50, 0., 250.);
+
+    hEv_nue_MET_eta = new TH2D("hEv_nue_MET_eta","", 100, -5.0, 10.0, 100, -5.0, 10.0);
+    hEv_nue_MET_Et = new TH2D("hEv_nue_MET_Et","", 50, 0, 250, 50, 0, 250);
 
 
     //------------------------------------
@@ -166,6 +169,8 @@ int main(int argc, char* argv[]) {
     hEv_e_eta_pt -> Write();
     hEv_nue_eta_pt_wicuts -> Write();
     hEv_MET_eta_pt -> Write();
+    hEv_nue_MET_eta -> Write();
+    hEv_nue_MET_Et -> Write();
 
 
 
@@ -293,6 +298,7 @@ void Process(ExRootTreeReader * treeReader) {
         is4e = true;
         isall4eseen = true;
         TLorentzVector Vec_Lepton_f;
+        GenParticle* my_nu;
 
         //first pass to check if the particles/event is good or not
         for(int i = 0; i < bTruthLepton->GetEntriesFast(); ++i) {
@@ -354,11 +360,8 @@ void Process(ExRootTreeReader * treeReader) {
             }
         } // Lepton Loop
 
-
-
         
         //Lepton loop again but for 4e events only
-        
         if (is4e){
             
             if (Debug) {
@@ -389,7 +392,7 @@ void Process(ExRootTreeReader * treeReader) {
                     hEv_nue_eta_nocuts -> Fill( lep_e-> Eta ,Event_Weight);
                     hEv_nue_Et_nocuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);
                     if (isall4eseen && goodjetevent){
-                      
+                        my_nu = lep_e;
                         //fill the electron neutrino comparison with missing energy
                         hEv_nue_eta_wicuts -> Fill( lep_e-> Eta ,Event_Weight);
                         hEv_nue_Et_wicuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);
@@ -426,6 +429,9 @@ void Process(ExRootTreeReader * treeReader) {
                     hEv_MET_Et -> Fill(Vec_Lepton_f.Pt() ,Event_Weight); //pt = et for neutrino
 
                     hEv_MET_eta_pt -> Fill(Vec_Lepton_f.Eta(), Vec_Lepton_f.Pt());
+                    hEv_nue_MET_eta -> Fill(my_nu->Eta, Vec_Lepton_f.Eta());
+                    hEv_nue_MET_Et -> Fill(my_nu -> PT, Vec_Lepton_f.Pt());
+                    
                 }
             }
         }
