@@ -1,14 +1,8 @@
-
 #include "Process.h"
 
+//fix the labels of the plots
 
-/*
-todo
-theres making a 2d plot of the MET/nue eta and pt to check it
-and then theres making an acceptance for the MET somehow, this one is going to be a big hassle
-*/
-
-bool Debug = true;
+bool Debug = false;
 
 bool LepPass(GenParticle* lep_b){
     //Checks if the electron can be seen by the detector or not
@@ -96,9 +90,13 @@ int main(int argc, char* argv[]) {
     hEv_e_eta_pt = new TH2D("hEv_e_eta_pt","", 50, -7.0, 3.0, 50, 0., 150.);
     hEv_nue_eta_pt_wicuts = new TH2D("hEv_nue_eta_pt_wicuts","", 50, -10.0, 10.0, 50, 0., 250.);
     hEv_MET_eta_pt = new TH2D("hEv_MET_eta_pt","", 50, -10.0, 10.0, 50, 0., 250.);
+    hEv_nue_MET_Phi = new TH2D("hEv_nue_MET_Phi","", 50, -4.0, 4.0, 50, -4., 4.);
 
     hEv_nue_MET_eta = new TH2D("hEv_nue_MET_eta","", 100, -5.0, 10.0, 100, -5.0, 10.0);
     hEv_nue_MET_Et = new TH2D("hEv_nue_MET_Et","", 50, 0, 250, 50, 0, 250);
+
+
+    hEv_debugMP_Pz_E = new TH2D("hEv_debugMP_Pz_E","", 100, -2000, 0, 100, 0, 2000);
 
 
     //------------------------------------
@@ -171,6 +169,8 @@ int main(int argc, char* argv[]) {
     hEv_MET_eta_pt -> Write();
     hEv_nue_MET_eta -> Write();
     hEv_nue_MET_Et -> Write();
+    hEv_nue_MET_Phi -> Write();
+    hEv_debugMP_Pz_E -> Write();
 
 
 
@@ -211,13 +211,8 @@ void Process(ExRootTreeReader * treeReader) {
     if (Debug) numberOfEntries = 1000;
 
     bool is4e; //is the event a 4e event?
-    bool isall4eseen; //can all electrons in the event be seen?
-    bool goodjetevent; //does this event have jet events that are actually jets and not correspond with leptons or smth else?
+    bool isalleseen; //can all electrons in the event be seen?
     bool goodjet; //is this jet a good jet? (Does its mass *not* correspond to a lepton)
-
-    //used for checking if the jet is associated with a lepton or not
-    TLorentzVector temp_jet;
-    TLorentzVector temp_lep;
 
     int nSelected = 0;
 
@@ -236,6 +231,13 @@ void Process(ExRootTreeReader * treeReader) {
         hEx_EventCount->Fill(0.5);
         hEx_WeightCount->Fill(0.5,Event_Weight);
 
+        is4e = true;
+        isalleseen = true;
+        TLorentzVector Vec_Lepton_f;
+        TLorentzVector Missing_Particle;
+        Missing_Particle.SetPtEtaPhiM(0.0, 0.0, 0.0, 0.0);
+        GenParticle* my_nu;
+
         if( (entry > 0 && entry%1000 == 0) || Debug) {
             std::cout << "-------------------------------------------------------------"  << std::endl;
             std::cout << "Processing Event Number =  " << entry  << std::endl;
@@ -246,7 +248,7 @@ void Process(ExRootTreeReader * treeReader) {
         // Particle Loop (Debug only for now)
         //------------------------------------------------------------------
 
-        if (Debug){
+        if (false){ // switch false with debug
             for(int i = 0; i < bParticle -> GetEntriesFast(); ++i){
                 GenParticle* p_Particle = (GenParticle*) bParticle->At(i);
                 std::cout << "Particle " << i << " pT = " << p_Particle->PT << " eta = " << p_Particle->Eta << " phi = " << p_Particle->Phi << " PID = " << p_Particle-> PID << " mass = " << p_Particle->Mass
@@ -257,10 +259,6 @@ void Process(ExRootTreeReader * treeReader) {
         //------------------------------------------------------------------
         // Jet Loop
         //------------------------------------------------------------------
-        
-        
-        std::vector<Jet*> list_goodjets; //list of jets that dont have the mass of a lepton
-
         for(int i = 0; i < bJet->GetEntriesFast(); ++i) {
 
             Jet* jet = (Jet*) bJet->At(i);
@@ -272,33 +270,37 @@ void Process(ExRootTreeReader * treeReader) {
             hPr_Jet_eta -> Fill( jet-> Eta, Event_Weight);
             hPr_Jet_Et -> Fill( TMath::Sqrt( TMath::Power(jet -> PT, 2) + TMath::Power(jet -> Mass, 2)), Event_Weight);
 
+            if(Debug) std::cout << "Jet " << i << " pT = " << jet->PT << " eta = " << jet->Eta << " phi = " << jet->Phi << " mass = " << jet->Mass << " flavour = " << jet->Flavor << std::endl;
+
             //Jet Cuts
             goodjet = true;
-            if (jet->Mass < 0.001) goodjet = false;
+            for(int j = 0; j < bTruthLepton->GetEntriesFast(); ++j) {
+                GenParticle* lep = (GenParticle*) bTruthLepton->At(j);
+                TLorentzVector Vec_Lepton_injet;
+                Vec_Lepton_injet.SetPtEtaPhiM(lep->PT,lep->Eta,lep->Phi,lep->Mass);
+                if (Vec_Lepton_injet.DeltaR(Vec_Jet) < 0.4) goodjet = false; 
+                
+                if (false) std::cout << "   Jet with Lepton " << j << "  Delta R: " << Vec_Lepton_injet.DeltaR(Vec_Jet) << std::endl; //if debug
+            }        
+            
+            if (Debug) std::cout << " Good jet: " << goodjet << std::endl;
 
-            if (goodjet){ 
-                //Vec_Jet_Good = Vec_Jet;
-                list_goodjets.push_back(jet);
+            if (goodjet){
+                Missing_Particle = Missing_Particle - Vec_Jet;
+                if (Debug){ 
+                    std::cout << " MP pt: " << Missing_Particle.Pt() << " eta: " << Missing_Particle.Eta() << std::endl;
+                    std::cout << " Jet E, Px, Py, Pz: " << Vec_Jet.E() << " " << Vec_Jet.Px() << " " << Vec_Jet.Py() << " " << Vec_Jet.Pz() << std::endl;
+                    std::cout << " MP  E, Px, Py, Pz: " << Missing_Particle.E() << " " << Missing_Particle.Px() << " " << Missing_Particle.Py() << " " << Missing_Particle.Pz() << std::endl;
+                    
+                }
             }
 
-            if(Debug) std::cout << "Jet " << i << " pT = " << jet->PT << " eta = " << jet->Eta << " phi = " << jet->Phi << " mass = " << jet->Mass << " flavour = " << jet->Flavor  
-                << " GoodJet: " << goodjet << std::endl;
         } // Jet Loop
         
-        goodjetevent = true;
-        if (list_goodjets.size() == 0) goodjetevent = false; //going to have to be changed in the near future
-
-
-
 
         //------------------------------------------------------------------
         // Lepton Loops
         //------------------------------------------------------------------
-
-        is4e = true;
-        isall4eseen = true;
-        TLorentzVector Vec_Lepton_f;
-        GenParticle* my_nu;
 
         //first pass to check if the particles/event is good or not
         for(int i = 0; i < bTruthLepton->GetEntriesFast(); ++i) {
@@ -327,29 +329,11 @@ void Process(ExRootTreeReader * treeReader) {
                 aPr_e_Et -> FillWeighted(LepPass(lep), Event_Weight, TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)));
 
                 //check if all 4e events seen 
-                if(!LepPass(lep)) isall4eseen = false;
-                
-                Vec_Lepton_f = Vec_Lepton_f + Vec_Lepton; //note: does not take into account possiblity of 6 electrons or more yet
-
-                //check if any jets are associated with leptons
-                if (list_goodjets.size() > 1){
-                    for(int j = 0; j < list_goodjets.size(); ++j) {
-                        temp_jet.SetPtEtaPhiM(list_goodjets[j]->PT, list_goodjets[j]->Eta, list_goodjets[j]->Phi, list_goodjets[j]->Mass);
-                        temp_lep.SetPtEtaPhiM(lep->PT, lep->Eta, lep->Phi, lep->Mass); 
-
-                        if (Debug) std::cout << "Delta R of 'good' jet " << j << " and lepton: " << temp_jet.DeltaR(temp_lep) << std::endl;
-
-                        if (temp_jet.DeltaR(temp_lep) < 0.4){ //0.4 is the jet radius as defined in the delphes
-                            if (Debug) std::cout<< "Erasing " << j << std::endl;
-                            
-                            list_goodjets.erase(list_goodjets.begin() + j);
-
-                        }
-                    }
-                }
+                if(!LepPass(lep)) isalleseen = false;                
             }
 
             if( abs(lep->PID) == 12) {
+                if (Debug) std::cout << " Nue E, Px, Py, Pz: " << Vec_Lepton.E() << " " << Vec_Lepton.Px() << " " << Vec_Lepton.Py() << " " << Vec_Lepton.Pz() << std::endl;
                 hPr_nue_eta -> Fill( lep-> Eta ,Event_Weight);
                 hPr_nue_Et -> Fill( TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)), Event_Weight);
             }
@@ -363,35 +347,21 @@ void Process(ExRootTreeReader * treeReader) {
         
         //Lepton loop again but for 4e events only
         if (is4e){
-            
+            TLorentzVector Debug_MP;
             if (Debug) {
-                std::cout << "This is a 4e event. Seen: " << isall4eseen << std::endl;
-                std::cout << "Number of good jets: " << list_goodjets.size() << std::endl;    
-            }
-
-            //Calculating missing energy fourvector
-            TLorentzVector Vec_Jet_Good;
-            for(int j = 0; j < list_goodjets.size(); ++j){
-                temp_jet.SetPtEtaPhiM(list_goodjets[j]->PT, list_goodjets[j]->Eta, list_goodjets[j]->Phi, list_goodjets[j]->Mass);
-                Vec_Jet_Good =  Vec_Jet_Good + temp_jet;
-            }
-
-            //Vec_Lepton_f becomes the missing energy fourvector here
-            Vec_Lepton_f = Vec_Lepton_f + Vec_Jet_Good; 
-            Vec_Lepton_f = -Vec_Lepton_f;
-            
-            if (Debug) {
-                std::cout << "fourvector addition test " << Vec_Lepton_f.Pt() << std::endl;
+                std::cout << "This is a 4e event. Seen: " << isalleseen << std::endl;  
             }
             
             //into lepton for loop again, this time its only  4e events
             for(int i = 0; i < bTruthLepton->GetEntriesFast(); ++i){
                 GenParticle* lep_e = (GenParticle*) bTruthLepton->At(i);
+                TLorentzVector Vec_Lepton_e;
+                Vec_Lepton_e.SetPtEtaPhiM(lep_e->PT,lep_e->Eta,lep_e->Phi,lep_e->Mass);
 
                 if( abs(lep_e->PID) == 12) {
                     hEv_nue_eta_nocuts -> Fill( lep_e-> Eta ,Event_Weight);
                     hEv_nue_Et_nocuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);
-                    if (isall4eseen && goodjetevent){
+                    if (isalleseen){
                         my_nu = lep_e;
                         //fill the electron neutrino comparison with missing energy
                         hEv_nue_eta_wicuts -> Fill( lep_e-> Eta ,Event_Weight);
@@ -400,7 +370,7 @@ void Process(ExRootTreeReader * treeReader) {
                         hEv_nue_eta_pt_wicuts -> Fill(lep_e-> Eta,  lep_e-> PT);
                     }
                 }
-
+                
                 if( abs(lep_e->PID) == 11){
                     hEv_e_eta_nocuts -> Fill( lep_e -> Eta , Event_Weight);
                     hEv_e_Et_nocuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);
@@ -411,6 +381,16 @@ void Process(ExRootTreeReader * treeReader) {
                     if(LepPass(lep_e)){
                         hEv_e_eta_wicuts -> Fill( lep_e -> Eta , Event_Weight);
                         hEv_e_Et_wicuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);   
+                        
+                        Missing_Particle = Missing_Particle - Vec_Lepton_e;
+                        if(Debug) {
+                            std::cout << "4elep " << i << " pT = " << Vec_Lepton_e.Pt() << " eta = " << Vec_Lepton_e.Eta() <<  std::endl;
+
+                            std::cout << " MPNow pT = " << Missing_Particle.Pt() << " eta = " << Missing_Particle.Eta() << std::endl;
+                            std::cout << "  4ee E, Px, Py, Pz: " << Vec_Lepton_e.E() << " " << Vec_Lepton_e.Px() << " " << Vec_Lepton_e.Py() << " " << Vec_Lepton_e.Pz() << std::endl;
+                            std::cout << "  MPe E, Px, Py, Pz: " << Missing_Particle.E() << " " << Missing_Particle.Px() << " " << Missing_Particle.Py() << " " << Missing_Particle.Pz() << std::endl;
+                        }
+    
                     }
 
                     hEv_e_eta_pt -> Fill(lep_e -> Eta, lep_e -> PT);
@@ -418,20 +398,40 @@ void Process(ExRootTreeReader * treeReader) {
 
             }
 
+            TLorentzVector my_nu_vec;
+            my_nu_vec.SetPtEtaPhiM(my_nu->PT,my_nu->Eta,my_nu->Phi,my_nu->Mass);
+            Debug_MP =   my_nu_vec - Missing_Particle;
+
+            if (Debug){
+                std::cout << "MET pt: " << Missing_Particle.Pt()  << " eta: " << Missing_Particle.Eta() << std::endl;
+                
+
+
+                std::cout << "DebugMP pT = " << Debug_MP.Pt() << " eta = " << Debug_MP.Eta() << std::endl;
+                std::cout << "DebugMP E, Px, Py, Pz: " << Debug_MP.E() << " " << Debug_MP.Px() << " " << Debug_MP.Py() << " " << Debug_MP.Pz() << std::endl;
+            }
+
             hEx_EventCount -> Fill(1.5);
-            if (isall4eseen) {
+            
+            if (isalleseen) {
                 hEx_EventCount -> Fill(2.5);
-                if (goodjetevent){ 
+
+                if (true){ 
                     hEx_EventCount -> Fill(3.5);
 
-
-                    hEv_MET_eta -> Fill(Vec_Lepton_f.Eta() ,Event_Weight);
-                    hEv_MET_Et -> Fill(Vec_Lepton_f.Pt() ,Event_Weight); //pt = et for neutrino
-
-                    hEv_MET_eta_pt -> Fill(Vec_Lepton_f.Eta(), Vec_Lepton_f.Pt());
-                    hEv_nue_MET_eta -> Fill(my_nu->Eta, Vec_Lepton_f.Eta());
-                    hEv_nue_MET_Et -> Fill(my_nu -> PT, Vec_Lepton_f.Pt());
                     
+                    hEv_MET_eta -> Fill(Missing_Particle.Eta() ,Event_Weight);
+                    hEv_MET_Et -> Fill(Missing_Particle.Pt() ,Event_Weight); //pt = et for neutrino
+                    
+                    hEv_MET_eta_pt -> Fill(Missing_Particle.Eta(), Missing_Particle.Pt());
+                    hEv_nue_MET_eta -> Fill(my_nu->Eta, Missing_Particle.Eta());
+                    hEv_nue_MET_Et -> Fill(my_nu -> PT, Missing_Particle.Pt());
+                    hEv_nue_MET_Phi -> Fill(my_nu -> Phi, Missing_Particle.Phi());
+
+                    
+                    hEv_debugMP_Pz_E -> Fill(Debug_MP.Pz(), Debug_MP.E());
+                    
+                
                 }
             }
         }
@@ -476,7 +476,7 @@ void Process(ExRootTreeReader * treeReader) {
 		    TLorentzVector Higgs = list_Zboson.at(0) + list_Zboson.at(1);
 
             hEx_ZZ_Mass->Fill( Higgs.M() , Event_Weight );
-            aEv_H_eta ->  FillWeighted(goodjetevent && isall4eseen && is4e, Event_Weight, Higgs.Eta());
+            aEv_H_eta ->  FillWeighted(isalleseen && is4e, Event_Weight, Higgs.Eta());
             
 
             //do the higgs selectoin events here 
