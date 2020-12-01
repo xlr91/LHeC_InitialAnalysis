@@ -1,6 +1,12 @@
 #include "Process.h"
 
-//fix the labels of the plots
+/*
+TODO:
+- fix the labels of the plots
+- find out whats going on with the kinematic fits
+- ask any about the weird 60/7000 thing in the parton/hadron thing
+*/
+
 
 bool Debug = false;
 
@@ -18,6 +24,47 @@ bool LepPass(GenParticle* lep_b){
     }
     return false;
 }  
+
+
+std::vector<double> Electron_Reco(TLorentzVector scat){
+    ///Electron reconstruction method
+    std::vector<double> output; // Q2, x, y
+    double rootS = 1300; 
+    double Ee = 60; //60 GeV of initial electron
+    double Qe2;
+    double xe;
+    double ye; 
+    
+    double theta = scat.Theta();
+    double Escat = abs(scat.E()); // Ee'
+
+    ye = 1 - (Escat / Ee) * TMath::Power(  TMath::Sin(theta/2) , 2);
+    Qe2 = 2 * Ee * Escat * (1 + TMath::Cos(theta));
+    xe = Qe2 / (rootS * rootS * ye);
+    output = {Qe2, xe, ye}; 
+    
+    return output;
+}
+
+
+std::vector<double> Hadron_Reco(TLorentzVector had){
+    std::vector<double> output;
+    double rootS = 1300;
+    double Ee = 60;
+    double Eh = abs(had.E());
+    double phz = abs(had.Pz());
+    double pht = abs(had.Pt());
+    double Qh2;
+    double xh;
+    double yh; 
+
+    yh = (Eh - phz) / (2 * Ee);
+    Qh2 = pht * pht / (1-yh);
+    xh = Qh2 / (rootS * rootS * yh);
+    output = {Qh2, xh, yh}; 
+    return output;
+
+}
 
 
 int main(int argc, char* argv[]) {
@@ -47,6 +94,7 @@ int main(int argc, char* argv[]) {
     OutputFile->mkdir("Example");
     OutputFile->mkdir("ParticleLevel");
     OutputFile->mkdir("4eEventLevel");
+    OutputFile->mkdir("4eEventLevel/KinematicReco");
 
     //Example histograms
     hEx_EventCount = new TH1D("hEx_EventCount","Event Classifications ; Event type; Number of Events",4,0,4);
@@ -73,7 +121,7 @@ int main(int argc, char* argv[]) {
     aPr_e_Et = new TEfficiency("aPr_e_Et","Acceptance of Electron vs Transverse Energy ; E_{T} [GeV]; Acceptance", 50 , 0, 150);
 
     //4e event only histograms
-    hEv_e_eta_nocuts = new TH1D("hEv_e_eta_nocuts","Electron (4e, no cuts) particles vs pseudorapidity ; Electron #eta; Number of Particles", 50, -7.0, 3.0);
+    hEv_e_eta_nocuts = new TH1D("hEv_e_eta_nocuts","Electron (4e, no cuts) particles vs neg pseudorapidity ; Electron - #eta; Number of Particles", 50, -2.0, 8.0);
     hEv_e_eta_wicuts = new TH1D("hEv_e_eta_wicuts","Electron (4e, with cuts) particles vs pseudorapidity; Electron #eta; Number of Particles", 50, -7.0, 3.0);
     hEv_e_Et_nocuts = new TH1D("hEv_e_Et_nocuts","Electron (4e, no cuts) particles vs transverse energy; Electron E_{T}; Number of Particles", 50, 0, 150);
     hEv_e_Et_wicuts = new TH1D("hEv_e_Et_wicuts","Electron (4e, with cuts) particles vs transverse energy; Electron E_{T} ; Number of Particles", 50, 0, 150);
@@ -87,7 +135,7 @@ int main(int argc, char* argv[]) {
     aEv_e_Et = new TEfficiency("aEv_e_Et","Acceptance of Electron vs Transverse Energy (4e events); Et; Acceptance", 50 , 0, 150);
     aEv_H_eta = new TEfficiency("aEv_H_eta","Acceptance of Higgs (with jet cuts) vs Eta (4e events); Et; Acceptance", 50 , 0, 150);
 
-    hEv_e_eta_pt = new TH2D("hEv_e_eta_pt","", 50, -7.0, 3.0, 50, 0., 150.);
+    hEv_e_eta_pt = new TH2D("hEv_e_eta_pt","Electron Distribution of pt vs eta; #eta; p_{T}", 50, -7.0, 3.0, 50, 0., 150.);
     hEv_nue_eta_pt_wicuts = new TH2D("hEv_nue_eta_pt_wicuts","", 50, -10.0, 10.0, 50, 0., 250.);
     hEv_MET_eta_pt = new TH2D("hEv_MET_eta_pt","", 50, -10.0, 10.0, 50, 0., 250.);
     hEv_nue_MET_Phi = new TH2D("hEv_nue_MET_Phi","", 50, -4.0, 4.0, 50, -4., 4.);
@@ -98,6 +146,21 @@ int main(int argc, char* argv[]) {
 
     hEv_debugMP_Pz_E = new TH2D("hEv_debugMP_Pz_E","", 100, -2000, 0, 100, 0, 2000);
 
+
+    
+    hEvR_recoQ2_elec_hadr = new TH2D("hEvR_recoQ2_elec_hadr","", 50, 0, 6.0, 50, 0., 6.);
+    hEvR_recox_elec_hadr = new TH2D("hEvR_recox_elec_hadr","", 50, -7, 0, 50, -7., 0.);
+    hEvR_recoy_elec_hadr = new TH2D("hEvR_recoy_elec_hadr","", 50, -3, 0, 50, -3., 0.);
+
+
+    hEvR_ereco_Q2 = new TH1D("hEvR_ereco_Q2","", 50, 0, 6);
+    hEvR_ereco_x = new TH1D("hEvR_ereco_x","", 50, -7, 0);
+    hEvR_ereco_y = new TH1D("hEvR_ereco_y","", 50, -3, 0);
+
+    hEvR_hreco_Q2 = new TH1D("hEvR_hreco_Q2","", 50, 0, 6);
+    hEvR_hreco_x = new TH1D("hEvR_hreco_x","", 50, -7, 0);
+    hEvR_hreco_y = new TH1D("hEvR_hreco_y","", 50, -3, 0);
+    
 
     //------------------------------------
 
@@ -172,6 +235,18 @@ int main(int argc, char* argv[]) {
     hEv_nue_MET_Phi -> Write();
     hEv_debugMP_Pz_E -> Write();
 
+    OutputFile->cd("4eEventLevel/KinematicReco");
+    hEvR_recoQ2_elec_hadr -> Write();
+    hEvR_recox_elec_hadr -> Write();
+    hEvR_recoy_elec_hadr -> Write();
+
+    hEvR_ereco_Q2 -> Write();
+    hEvR_ereco_x -> Write();
+    hEvR_ereco_y -> Write();
+
+    hEvR_hreco_Q2 -> Write();
+    hEvR_hreco_x -> Write();
+    hEvR_hreco_y -> Write();
 
 
     OutputFile->Close();
@@ -210,6 +285,8 @@ void Process(ExRootTreeReader * treeReader) {
     Long64_t numberOfEntries = treeReader->GetEntries();
     if (Debug) numberOfEntries = 1000;
 
+    Debug = true;
+
     bool is4e; //is the event a 4e event?
     bool isalleseen; //can all electrons in the event be seen?
     bool goodjet; //is this jet a good jet? (Does its mass *not* correspond to a lepton)
@@ -221,6 +298,9 @@ void Process(ExRootTreeReader * treeReader) {
 
     // Loop over all events
     for(Int_t entry = 0; entry < numberOfEntries; ++entry) {
+
+
+        if (entry == 100) Debug = false;
 
         // Load selected branches with data from specified event
         treeReader->ReadEntry(entry);
@@ -248,10 +328,11 @@ void Process(ExRootTreeReader * treeReader) {
         // Particle Loop (Debug only for now)
         //------------------------------------------------------------------
 
-        if (false){ // switch false with debug
-            for(int i = 0; i < bParticle -> GetEntriesFast(); ++i){
+        if (Debug){ // switch false with debug
+            //for(int i = 0; i < bParticle -> GetEntriesFast(); ++i){
+            for(int i = 0; i < 4; ++i){   
                 GenParticle* p_Particle = (GenParticle*) bParticle->At(i);
-                std::cout << "Particle " << i << " pT = " << p_Particle->PT << " eta = " << p_Particle->Eta << " phi = " << p_Particle->Phi << " PID = " << p_Particle-> PID << " mass = " << p_Particle->Mass
+                std::cout << "Particle " << i << " E = " << p_Particle -> E << " pZ = " << p_Particle->Pz << " pT = " << p_Particle->PT << " eta = " << p_Particle->Eta << " phi = " << p_Particle->Phi << " PID = " << p_Particle-> PID << " mass = " << p_Particle->Mass
                     << " Mother: " << p_Particle->M1 << " Daughter: " << p_Particle->D1 << " Status: " << p_Particle -> Status <<  std::endl;
             }
         }
@@ -283,14 +364,14 @@ void Process(ExRootTreeReader * treeReader) {
                 if (false) std::cout << "   Jet with Lepton " << j << "  Delta R: " << Vec_Lepton_injet.DeltaR(Vec_Jet) << std::endl; //if debug
             }        
             
-            if (Debug) std::cout << " Good jet: " << goodjet << std::endl;
+            //if (Debug) std::cout << " Good jet: " << goodjet << std::endl;
 
             if (goodjet){
                 Missing_Particle = Missing_Particle - Vec_Jet;
                 if (Debug){ 
-                    std::cout << " MP pt: " << Missing_Particle.Pt() << " eta: " << Missing_Particle.Eta() << std::endl;
-                    std::cout << " Jet E, Px, Py, Pz: " << Vec_Jet.E() << " " << Vec_Jet.Px() << " " << Vec_Jet.Py() << " " << Vec_Jet.Pz() << std::endl;
-                    std::cout << " MP  E, Px, Py, Pz: " << Missing_Particle.E() << " " << Missing_Particle.Px() << " " << Missing_Particle.Py() << " " << Missing_Particle.Pz() << std::endl;
+                    //std::cout << " MP pt: " << Missing_Particle.Pt() << " eta: " << Missing_Particle.Eta() << std::endl;
+                    //std::cout << " Jet E, Px, Py, Pz: " << Vec_Jet.E() << " " << Vec_Jet.Px() << " " << Vec_Jet.Py() << " " << Vec_Jet.Pz() << std::endl;
+                    //std::cout << " MP  E, Px, Py, Pz: " << Missing_Particle.E() << " " << Missing_Particle.Px() << " " << Missing_Particle.Py() << " " << Missing_Particle.Pz() << std::endl;
                     
                 }
             }
@@ -333,7 +414,8 @@ void Process(ExRootTreeReader * treeReader) {
             }
 
             if( abs(lep->PID) == 12) {
-                if (Debug) std::cout << " Nue E, Px, Py, Pz: " << Vec_Lepton.E() << " " << Vec_Lepton.Px() << " " << Vec_Lepton.Py() << " " << Vec_Lepton.Pz() << std::endl;
+                if (Debug) std::cout << " Nue E, Px, Py, Pz, P: " << Vec_Lepton.E() << " " << Vec_Lepton.Px() << " " << Vec_Lepton.Py() << " " << Vec_Lepton.Pz() << " " << Vec_Lepton.P()<<  std::endl;
+                //if (Debug) std::cout << " Nue theta, sintheta, costheta: "<<Vec_Lepton.Theta() <<  " " << TMath::Sin(Vec_Lepton.Theta()) << " " << TMath::Cos(Vec_Lepton.Theta()) <<std::endl;
                 hPr_nue_eta -> Fill( lep-> Eta ,Event_Weight);
                 hPr_nue_Et -> Fill( TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)), Event_Weight);
             }
@@ -372,7 +454,7 @@ void Process(ExRootTreeReader * treeReader) {
                 }
                 
                 if( abs(lep_e->PID) == 11){
-                    hEv_e_eta_nocuts -> Fill( lep_e -> Eta , Event_Weight);
+                    hEv_e_eta_nocuts -> Fill( -(lep_e -> Eta) , Event_Weight);
                     hEv_e_Et_nocuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);
 
                     aEv_e_eta -> FillWeighted(LepPass(lep_e), Event_Weight, lep_e->Eta);
@@ -384,11 +466,10 @@ void Process(ExRootTreeReader * treeReader) {
                         
                         Missing_Particle = Missing_Particle - Vec_Lepton_e;
                         if(Debug) {
-                            std::cout << "4elep " << i << " pT = " << Vec_Lepton_e.Pt() << " eta = " << Vec_Lepton_e.Eta() <<  std::endl;
-
-                            std::cout << " MPNow pT = " << Missing_Particle.Pt() << " eta = " << Missing_Particle.Eta() << std::endl;
-                            std::cout << "  4ee E, Px, Py, Pz: " << Vec_Lepton_e.E() << " " << Vec_Lepton_e.Px() << " " << Vec_Lepton_e.Py() << " " << Vec_Lepton_e.Pz() << std::endl;
-                            std::cout << "  MPe E, Px, Py, Pz: " << Missing_Particle.E() << " " << Missing_Particle.Px() << " " << Missing_Particle.Py() << " " << Missing_Particle.Pz() << std::endl;
+                            //std::cout << "4elep " << i << " pT = " << Vec_Lepton_e.Pt() << " eta = " << Vec_Lepton_e.Eta() <<  std::endl;
+                            //std::cout << " MPNow pT = " << Missing_Particle.Pt() << " eta = " << Missing_Particle.Eta() << std::endl;
+                            //std::cout << "  4ee E, Px, Py, Pz: " << Vec_Lepton_e.E() << " " << Vec_Lepton_e.Px() << " " << Vec_Lepton_e.Py() << " " << Vec_Lepton_e.Pz() << std::endl;
+                            //std::cout << "  MPe E, Px, Py, Pz: " << Missing_Particle.E() << " " << Missing_Particle.Px() << " " << Missing_Particle.Py() << " " << Missing_Particle.Pz() << std::endl;
                         }
     
                     }
@@ -402,13 +483,18 @@ void Process(ExRootTreeReader * treeReader) {
             my_nu_vec.SetPtEtaPhiM(my_nu->PT,my_nu->Eta,my_nu->Phi,my_nu->Mass);
             Debug_MP =   my_nu_vec - Missing_Particle;
 
+            TLorentzVector Hadronic_Vector = -Missing_Particle;
+
+            std::vector<double> E_Reco_Lst = Electron_Reco(my_nu_vec);
+            std::vector<double> H_Reco_Lst = Hadron_Reco(Hadronic_Vector);
+
             if (Debug){
                 std::cout << "MET pt: " << Missing_Particle.Pt()  << " eta: " << Missing_Particle.Eta() << std::endl;
-                
+                //std::cout << "DebugMP pT = " << Debug_MP.Pt() << " eta = " << Debug_MP.Eta() << std::endl;
+                //std::cout << "DebugMP E, Px, Py, Pz: " << Debug_MP.E() << " " << Debug_MP.Px() << " " << Debug_MP.Py() << " " << Debug_MP.Pz() << std::endl;
 
-
-                std::cout << "DebugMP pT = " << Debug_MP.Pt() << " eta = " << Debug_MP.Eta() << std::endl;
-                std::cout << "DebugMP E, Px, Py, Pz: " << Debug_MP.E() << " " << Debug_MP.Px() << " " << Debug_MP.Py() << " " << Debug_MP.Pz() << std::endl;
+                std::cout << "E-Reco Q2: " << E_Reco_Lst[0] << " x: " << E_Reco_Lst[1] << " y: " << E_Reco_Lst[2] << std::endl;
+                std::cout << "H-Reco Q2: " << H_Reco_Lst[0] << " x: " << H_Reco_Lst[1] << " y: " << H_Reco_Lst[2] << std::endl;
             }
 
             hEx_EventCount -> Fill(1.5);
@@ -428,8 +514,27 @@ void Process(ExRootTreeReader * treeReader) {
                     hEv_nue_MET_Et -> Fill(my_nu -> PT, Missing_Particle.Pt());
                     hEv_nue_MET_Phi -> Fill(my_nu -> Phi, Missing_Particle.Phi());
 
-                    
                     hEv_debugMP_Pz_E -> Fill(Debug_MP.Pz(), Debug_MP.E());
+
+
+                    //try{
+                    hEvR_recoQ2_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[0]), TMath::Log10(H_Reco_Lst[0]));
+                    hEvR_recox_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[1]), TMath::Log10(H_Reco_Lst[1]));
+                    hEvR_recoy_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[2]), TMath::Log10(H_Reco_Lst[2]));
+                    
+                    hEvR_ereco_Q2 -> Fill(TMath::Log10(E_Reco_Lst[0]), Event_Weight);
+                    hEvR_ereco_x -> Fill(TMath::Log10(E_Reco_Lst[1]), Event_Weight);
+                    hEvR_ereco_y -> Fill(TMath::Log10(E_Reco_Lst[2]), Event_Weight);
+                    
+                    hEvR_hreco_Q2 -> Fill(TMath::Log10(H_Reco_Lst[0]), Event_Weight);
+                    hEvR_hreco_x -> Fill(TMath::Log10(H_Reco_Lst[1]), Event_Weight);
+                    hEvR_hreco_y -> Fill(TMath::Log10(H_Reco_Lst[2]), Event_Weight);
+                    
+                    /*
+                    } catch (...){
+                        std::cout << "Caught exception while printing histogram" << std::endl;
+                    }
+                    */
                     
                 
                 }
