@@ -29,6 +29,15 @@ the path to the first input file is
 the second one is
 /disk/moose/general/asc/Y4_LHeC_2021/LHeC_CC_H4l.Had.Delphes.root
 
+V2 is
+/disk/moose/general/asc/Y4_LHeC_2021/LHeC_CC_H4l.Had.Delphes.v2.root
+
+Theres another one, this one is the lighter one
+/disk/moose/general/asc/Y4_LHeC_2021/LHeC_CC_H4l.Parton.LHE.Delphes.root
+
+The sherpa backup
+/disk/moose/general/asc/Y4_LHeC_2021/LHeC_CC_H4l.Sherpa.root
+
 # Making changes to the code
 
 Whenever you update the C++ code, make sure you re-compile the code before re-running it by issuing the following command again:

@@ -117,10 +117,13 @@ TH2D * hEvR_recoy_elec_hadr;
 TH1D * hEvR_ereco_Q2;
 TH1D * hEvR_ereco_x;
 TH1D * hEvR_ereco_y;
+TH1D * hEvR_ereco_y_true;
 
 TH1D * hEvR_hreco_Q2;
 TH1D * hEvR_hreco_x;
 TH1D * hEvR_hreco_y;
+TH1D * hEvR_hreco_y_true;
+TH1D * hEvR_EPz;
 
 TH2D * hEvR_hreco_x_Q2;
 

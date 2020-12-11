@@ -2,13 +2,11 @@
 
 /*
 TODO:
-- fix the labels of the plots
 - find out whats going on with the kinematic fits
-- ask any about the weird 60/7000 thing in the parton/hadron thing
 */
 
 
-bool Debug = false;
+bool Debug = true;
 
 bool LepPass(GenParticle* lep_b){
     //Checks if the electron can be seen by the detector or not
@@ -23,6 +21,7 @@ bool LepPass(GenParticle* lep_b){
         return true;
     }
     return false; //lets remove the cuts
+    //return true; //lets remove the cuts
 }  
 
 
@@ -146,25 +145,31 @@ int main(int argc, char* argv[]) {
 
     hEv_debugMP_Pz_E = new TH2D("hEv_debugMP_Pz_E","Checking E vs Pz distribution for Nue-MP", 100, -2000, 0, 100, 0, 2000);
 
-    hEv_HReco_M = new TH1D("hEv_HReco_M","Reconstructed Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 50, 0, 400);
+    //hEv_HReco_M = new TH1D("hEv_HReco_M","Reconstructed Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 50, 0, 400);
+    hEv_HReco_M = new TH1D("hEv_HReco_M","Reconstructed Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 50, 100, 150);
 
 
     
     hEvR_recoQ2_elec_hadr = new TH2D("hEvR_recoQ2_elec_hadr","2D Histogram of LogQ2, Hadron vs Electron Method; log_{10} Q2 Electron; log_{10} Q2 Hadron", 50, 0, 6.0, 50, 0., 6.);
     hEvR_recox_elec_hadr = new TH2D("hEvR_recox_elec_hadr","2D Histogram of Logx, Hadron vs Electron Method; log_{10} x Electron; log_{10} x Hadron", 50, -7, 0, 50, -7., 0.);
-    //hEvR_recoy_elec_hadr = new TH2D("hEvR_recoy_elec_hadr","2D Histogram of Logy, Hadron vs Electron Method; log_{10} y Electron; log_{10} y Hadron", 50, -3, 0, 50, -3., 0.);
-    hEvR_recoy_elec_hadr = new TH2D("hEvR_recoy_elec_hadr","2D Histogram of Logy, Hadron vs Electron Method; log_{10} y Electron; log_{10} y Hadron", 50, -0.3, 0.3, 50, -1.5, 0.);
+    hEvR_recoy_elec_hadr = new TH2D("hEvR_recoy_elec_hadr","2D Histogram of Logy, Hadron vs Electron Method; log_{10} y Electron; log_{10} y Hadron", 50, -3, 0, 50, -3., 0.);
+    //hEvR_recoy_elec_hadr = new TH2D("hEvR_recoy_elec_hadr","2D Histogram of Logy, Hadron vs Electron Method; log_{10} y Electron; log_{10} y Hadron", 50, -0.3, 0.3, 50, -1.5, 0.);
 
 
     hEvR_ereco_Q2 = new TH1D("hEvR_ereco_Q2","Log Q2 values for Electron Reconstruction Method; log_{10} Q^{2}; Events", 50, 0, 6);
     hEvR_ereco_x = new TH1D("hEvR_ereco_x","Log x values for Electron Reconstruction Method; log_{10} x; Events", 50, -7, 0);
     hEvR_ereco_y = new TH1D("hEvR_ereco_y","Log y values for Electron Reconstruction Method; log_{10} y; Events", 50, -3, 0);
+    hEvR_ereco_y_true = new TH1D("hEvR_ereco_y_true","y values for Electron Reconstruction Method; y; Events", 50, -1, 2);
 
     hEvR_hreco_Q2 = new TH1D("hEvR_hreco_Q2","Log Q2 values for Hadron Reconstruction Method; log_{10} Q^{2}; Events", 50, 0, 6);
-    hEvR_hreco_x = new TH1D("hEvR_hreco_x","Log Q2 values for Hadron Reconstruction Method; log_{10} x; Events", 50, -7, 0);
-    hEvR_hreco_y = new TH1D("hEvR_hreco_y","Log Q2 values for Hadron Reconstruction Method; log_{10} y; Events", 50, -3, 0);
+    hEvR_hreco_x = new TH1D("hEvR_hreco_x","Log x values for Hadron Reconstruction Method; log_{10} x; Events", 50, -7, 0);
+    hEvR_hreco_y = new TH1D("hEvR_hreco_y","Log y values for Hadron Reconstruction Method; log_{10} y; Events", 50, -3, 0);
+    hEvR_hreco_y_true = new TH1D("hEvR_hreco_y_true"," y values for Hadron Reconstruction Method; y; Events", 50, -1, 2);
+    hEvR_EPz = new TH1D("hEvR_EPz","Doing sum of E-Pz ; Sum of E-Pz; Events", 50, 0, 5000);
 
     hEvR_hreco_x_Q2 = new TH2D("hEvR_hreco_x_Q2","2D Histogram of Q2 vs x for hadron method; x; Q^{2}", 50, 0, 0.2, 50, 0, 45000);
+
+    
 
     
     
@@ -252,10 +257,14 @@ int main(int argc, char* argv[]) {
     hEvR_ereco_Q2 -> Write();
     hEvR_ereco_x -> Write();
     hEvR_ereco_y -> Write();
+    hEvR_ereco_y_true -> Write();
 
     hEvR_hreco_Q2 -> Write();
     hEvR_hreco_x -> Write();
     hEvR_hreco_y -> Write();
+    hEvR_hreco_y_true -> Write();
+
+    hEvR_EPz -> Write();
     hEvR_hreco_x_Q2 -> Write();
 
 
@@ -295,8 +304,6 @@ void Process(ExRootTreeReader * treeReader) {
     Long64_t numberOfEntries = treeReader->GetEntries();
     if (Debug) numberOfEntries = 1000;
 
-    //Debug = true;
-
     bool is4e; //is the event a 4e event?
     bool isalleseen; //can all electrons in the event be seen?
     bool goodjet; //is this jet a good jet? (Does its mass *not* correspond to a lepton)
@@ -310,7 +317,7 @@ void Process(ExRootTreeReader * treeReader) {
     for(Int_t entry = 0; entry < numberOfEntries; ++entry) {
 
 
-        //if (entry == 100) Debug = false;
+        //if (entry == 1000) Debug = false;
 
         // Load selected branches with data from specified event
         treeReader->ReadEntry(entry);
@@ -325,7 +332,9 @@ void Process(ExRootTreeReader * treeReader) {
         isalleseen = true;
         TLorentzVector Vec_Lepton_f;
         TLorentzVector Missing_Particle;
+        TLorentzVector FourLepton_Vector;
         Missing_Particle.SetPtEtaPhiM(0.0, 0.0, 0.0, 0.0);
+        FourLepton_Vector.SetPtEtaPhiM(0.0, 0.0, 0.0, 0.0);
         GenParticle* my_nu;
 
         if( (entry > 0 && entry%1000 == 0) || Debug) {
@@ -339,8 +348,8 @@ void Process(ExRootTreeReader * treeReader) {
         //------------------------------------------------------------------
 
         if (Debug){ // switch false with debug
-            //for(int i = 0; i < bParticle -> GetEntriesFast(); ++i){
-            for(int i = 0; i < 4; ++i){   
+            for(int i = 0; i < bParticle -> GetEntriesFast(); ++i){
+            //for(int i = 0; i < 4; ++i){   
                 GenParticle* p_Particle = (GenParticle*) bParticle->At(i);
                 std::cout << "Particle " << i << " E = " << p_Particle -> E << " pZ = " << p_Particle->Pz << " pT = " << p_Particle->PT << " eta = " << p_Particle->Eta << " phi = " << p_Particle->Phi << " PID = " << p_Particle-> PID << " mass = " << p_Particle->Mass
                     << " Mother: " << p_Particle->M1 << " Daughter: " << p_Particle->D1 << " Status: " << p_Particle -> Status <<  std::endl;
@@ -379,9 +388,9 @@ void Process(ExRootTreeReader * treeReader) {
             if (goodjet){
                 Missing_Particle = Missing_Particle - Vec_Jet;
                 if (Debug){ 
-                    //std::cout << " MP pt: " << Missing_Particle.Pt() << " eta: " << Missing_Particle.Eta() << std::endl;
-                    //std::cout << " Jet E, Px, Py, Pz: " << Vec_Jet.E() << " " << Vec_Jet.Px() << " " << Vec_Jet.Py() << " " << Vec_Jet.Pz() << std::endl;
-                    //std::cout << " MP  E, Px, Py, Pz: " << Missing_Particle.E() << " " << Missing_Particle.Px() << " " << Missing_Particle.Py() << " " << Missing_Particle.Pz() << std::endl;
+                    std::cout << " MP pt: " << Missing_Particle.Pt() << " eta: " << Missing_Particle.Eta() << std::endl;
+                    std::cout << " Jet E, Px, Py, Pz: " << Vec_Jet.E() << " " << Vec_Jet.Px() << " " << Vec_Jet.Py() << " " << Vec_Jet.Pz() << std::endl;
+                    std::cout << " MP  E, Px, Py, Pz: " << Missing_Particle.E() << " " << Missing_Particle.Px() << " " << Missing_Particle.Py() << " " << Missing_Particle.Pz() << std::endl;
                     
                 }
             }
@@ -475,6 +484,7 @@ void Process(ExRootTreeReader * treeReader) {
                         hEv_e_Et_wicuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);   
                         
                         Missing_Particle = Missing_Particle - Vec_Lepton_e;
+                        FourLepton_Vector = FourLepton_Vector + Vec_Lepton_e;
                         if(Debug) {
                             //std::cout << "4elep " << i << " pT = " << Vec_Lepton_e.Pt() << " eta = " << Vec_Lepton_e.Eta() <<  std::endl;
                             //std::cout << " MPNow pT = " << Missing_Particle.Pt() << " eta = " << Missing_Particle.Eta() << std::endl;
@@ -498,6 +508,8 @@ void Process(ExRootTreeReader * treeReader) {
             std::vector<double> E_Reco_Lst = Electron_Reco(my_nu_vec);
             std::vector<double> H_Reco_Lst = Hadron_Reco(Hadronic_Vector);
 
+            double sumEPz = my_nu_vec.E() - my_nu_vec.Pz() + ( Hadronic_Vector.E() - Hadronic_Vector.Pz());
+
             if (Debug){
                 std::cout << "MET pt: " << Missing_Particle.Pt()  << " eta: " << Missing_Particle.Eta() << std::endl;
                 //std::cout << "DebugMP pT = " << Debug_MP.Pt() << " eta = " << Debug_MP.Eta() << std::endl;
@@ -505,7 +517,8 @@ void Process(ExRootTreeReader * treeReader) {
 
                 std::cout << "E-Reco Q2: " << E_Reco_Lst[0] << " x: " << E_Reco_Lst[1] << " y: " << E_Reco_Lst[2] << std::endl;
                 std::cout << "H-Reco Q2: " << H_Reco_Lst[0] << " x: " << H_Reco_Lst[1] << " y: " << H_Reco_Lst[2] << std::endl;
-                std::cout << "Reco Higgs Mass?: " << Hadronic_Vector.M() << std::endl;
+                std::cout << "Reco Higgs Mass?: " << FourLepton_Vector.M() << std::endl;
+                std::cout << "SumPz: " << sumEPz << std::endl;
             }
 
             hEx_EventCount -> Fill(1.5);
@@ -527,7 +540,7 @@ void Process(ExRootTreeReader * treeReader) {
 
                     hEv_debugMP_Pz_E -> Fill(Debug_MP.Pz(), Debug_MP.E());
 
-                    hEv_HReco_M -> Fill(Hadronic_Vector.M(), Event_Weight);
+                    hEv_HReco_M -> Fill(FourLepton_Vector.M(), Event_Weight); //not the hadronic vector
 
 
                     //try{
@@ -538,11 +551,15 @@ void Process(ExRootTreeReader * treeReader) {
                     hEvR_ereco_Q2 -> Fill(TMath::Log10(E_Reco_Lst[0]), Event_Weight);
                     hEvR_ereco_x -> Fill(TMath::Log10(E_Reco_Lst[1]), Event_Weight);
                     hEvR_ereco_y -> Fill(TMath::Log10(E_Reco_Lst[2]), Event_Weight);
+                    hEvR_ereco_y_true -> Fill(E_Reco_Lst[2], Event_Weight);
                     
                     hEvR_hreco_Q2 -> Fill(TMath::Log10(H_Reco_Lst[0]), Event_Weight);
                     hEvR_hreco_x -> Fill(TMath::Log10(H_Reco_Lst[1]), Event_Weight);
                     hEvR_hreco_y -> Fill(TMath::Log10(H_Reco_Lst[2]), Event_Weight);
+                    hEvR_hreco_y_true -> Fill(H_Reco_Lst[2], Event_Weight);
                     hEvR_hreco_x_Q2 -> Fill(H_Reco_Lst[1], H_Reco_Lst[0]);
+
+                    hEvR_EPz -> Fill(sumEPz, Event_Weight);
                     
                     /*
                     } catch (...){
