@@ -106,6 +106,8 @@ TEfficiency * aEv_e_eta;
 TEfficiency * aEv_e_Et;
 
 TH1D * hEv_HReco_M;
+TH1D * hEv_ZReco_M;
+TH1D * hEv_ZstarReco_M;
 
 
 TH2D * hEvR_recoQ2_elec_hadr;
@@ -143,4 +145,6 @@ bool LepPass(GenParticle* lep_b);
 
 std::vector<double> Electron_Reco(TLorentzVector scat);
 std::vector<double> Hadron_Reco(TLorentzVector had);
+
+std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> test);
 //double jetlepdR (TLorentzVector jet_v, TLorentzVector lep_v)

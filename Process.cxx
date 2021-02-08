@@ -66,6 +66,99 @@ std::vector<double> Hadron_Reco(TLorentzVector had){
 }
 
 
+std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
+    //returns a list of TLORENTZVECOTR which is [Z, Z*]
+    int neg = 0;
+    int pos = 2;
+    int ind;
+
+    double Zmass = 91.1876;
+
+    std::vector<GenParticle*> e_sorted;
+    std::vector<TLorentzVector> e_vecs, Ztry, ans;
+    std::vector<double> Ztrymass;
+    e_sorted.resize(e_list.size());
+    e_vecs.resize(e_list.size());
+
+    TLorentzVector V_temp;
+
+    for(int i = 0; i < e_list.size(); ++i){
+        if(e_list[i] -> Charge == -1){
+            ind = neg;
+            neg++;
+        }
+        else if(e_list[i] -> Charge == 1){
+            ind = pos;
+            pos++;
+        }
+        e_sorted[ind] = e_list[i];
+        V_temp.SetPtEtaPhiM(e_list[i]->PT,e_list[i]->Eta,e_list[i]->Phi,e_list[i]->Mass);
+        e_vecs[ind] = V_temp;
+    }
+
+    Ztry.push_back(e_vecs[0] + e_vecs[2]);
+    Ztry.push_back(e_vecs[1] + e_vecs[3]);
+    Ztry.push_back(e_vecs[0] + e_vecs[3]);
+    Ztry.push_back(e_vecs[1] + e_vecs[2]);
+
+    for(int o = 0; o < Ztry.size(); ++o){
+        Ztrymass.push_back(Ztry[o].M());
+    }
+
+    double curr = 0;
+    int currind = 0;
+    double val;
+
+    for(int k = 0; k < Ztrymass.size(); ++k){
+        val = Ztrymass[k];
+        if(abs(Zmass - val) < abs(Zmass - curr)){
+            curr = val;
+            currind = k;
+        }
+    }
+
+
+    switch (currind){
+        case 0:
+            ans.push_back(Ztry[0]);
+            ans.push_back(Ztry[1]);
+            break;
+        case 1:
+            ans.push_back(Ztry[1]);
+            ans.push_back(Ztry[0]);
+            break;
+        case 2:
+            ans.push_back(Ztry[2]);
+            ans.push_back(Ztry[3]);
+            break;
+        case 3:
+            ans.push_back(Ztry[3]);
+            ans.push_back(Ztry[2]);
+            break;
+    }
+
+
+    //t<<curr << " " << currind <<std::endl;
+    
+    /*
+    array = [2, 42, 82, 122, 162, 202, 242, 282, 322, 362]
+    number = 112
+    print closest (number, array)
+
+    def closest (num, arr):
+        curr = arr[0]
+        foreach val in arr:
+            if abs (num - val) < abs (num - curr):
+                curr = val
+        return curr
+
+    */
+
+
+    //FINISH THE CODE, MAKE IT RETURN WHAT YOU WANT IT TO RETURN
+    return ans;
+}
+
 int main(int argc, char* argv[]) {
 
     // Input Delphes File
@@ -146,9 +239,10 @@ int main(int argc, char* argv[]) {
     hEv_debugMP_Pz_E = new TH2D("hEv_debugMP_Pz_E","Checking E vs Pz distribution for Nue-MP", 100, -2000, 0, 100, 0, 2000);
 
     //hEv_HReco_M = new TH1D("hEv_HReco_M","Reconstructed Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 50, 0, 400);
-    hEv_HReco_M = new TH1D("hEv_HReco_M","Reconstructed Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 50, 100, 150);
-
-
+    hEv_HReco_M = new TH1D("hEv_HReco_M","Reconstructed Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 25, 100, 150);
+    hEv_ZReco_M = new TH1D("hEv_ZReco_M","Reconstructed Z Mass; Mass of Reconstructed Particle; Number of Particles", 25, 0, 150);
+    hEv_ZstarReco_M = new TH1D("hEv_ZstarReco_M","Reconstructed Z* Mass; Mass of Reconstructed Particle; Number of Particles", 25, 0, 150);
+    
     
     hEvR_recoQ2_elec_hadr = new TH2D("hEvR_recoQ2_elec_hadr","2D Histogram of LogQ2, Hadron vs Electron Method; log_{10} Q2 Electron; log_{10} Q2 Hadron", 50, 0, 6.0, 50, 0., 6.);
     hEvR_recox_elec_hadr = new TH2D("hEvR_recox_elec_hadr","2D Histogram of Logx, Hadron vs Electron Method; log_{10} x Electron; log_{10} x Hadron", 50, -7, 0, 50, -7., 0.);
@@ -247,7 +341,21 @@ int main(int argc, char* argv[]) {
     hEv_nue_MET_Phi -> Write();
     hEv_debugMP_Pz_E -> Write();
 
+    hEv_HReco_M->SetOption("L");
+    //hEv_HReco_M->SetFillColorAlpha (2, 1);
+    //hEv_HReco_M->SetLineColor(3);
+    //std::cout<<"Yeet" << std::endl;
+    //std::cout<<hEv_HReco_M -> GetOption() << std::endl;
     hEv_HReco_M -> Write();
+    hEv_ZReco_M -> Write();
+    hEv_ZstarReco_M -> Write();
+
+    TCanvas *c1 = new TCanvas("c1"," Test",50,50,1680,1050);
+    hEv_ZReco_M -> Draw();
+    hEv_ZstarReco_M -> Draw("Same");
+    c1 -> Write("TestCanvas");
+
+
 
     OutputFile->cd("4eEventLevel/KinematicReco");
     hEvR_recoQ2_elec_hadr -> Write();
@@ -266,6 +374,8 @@ int main(int argc, char* argv[]) {
 
     hEvR_EPz -> Write();
     hEvR_hreco_x_Q2 -> Write();
+
+    
 
 
     OutputFile->Close();
@@ -348,8 +458,8 @@ void Process(ExRootTreeReader * treeReader) {
         //------------------------------------------------------------------
 
         if (Debug){ // switch false with debug
-            for(int i = 0; i < bParticle -> GetEntriesFast(); ++i){
-            //for(int i = 0; i < 4; ++i){   
+            //for(int i = 0; i < bParticle -> GetEntriesFast(); ++i){
+            for(int i = 0; i < 4; ++i){   
                 GenParticle* p_Particle = (GenParticle*) bParticle->At(i);
                 std::cout << "Particle " << i << " E = " << p_Particle -> E << " pZ = " << p_Particle->Pz << " pT = " << p_Particle->PT << " eta = " << p_Particle->Eta << " phi = " << p_Particle->Phi << " PID = " << p_Particle-> PID << " mass = " << p_Particle->Mass
                     << " Mother: " << p_Particle->M1 << " Daughter: " << p_Particle->D1 << " Status: " << p_Particle -> Status <<  std::endl;
@@ -449,6 +559,7 @@ void Process(ExRootTreeReader * treeReader) {
         //Lepton loop again but for 4e events only
         if (is4e){
             TLorentzVector Debug_MP;
+            std::vector<GenParticle*> e_par_list;
             if (Debug) {
                 std::cout << "This is a 4e event. Seen: " << isalleseen << std::endl;  
             }
@@ -483,6 +594,10 @@ void Process(ExRootTreeReader * treeReader) {
                         hEv_e_eta_wicuts -> Fill( lep_e -> Eta , Event_Weight);
                         hEv_e_Et_wicuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);   
                         
+
+                        e_par_list.push_back(lep_e);
+
+
                         Missing_Particle = Missing_Particle - Vec_Lepton_e;
                         FourLepton_Vector = FourLepton_Vector + Vec_Lepton_e;
                         if(Debug) {
@@ -499,67 +614,97 @@ void Process(ExRootTreeReader * treeReader) {
 
             }
 
-            TLorentzVector my_nu_vec;
-            my_nu_vec.SetPtEtaPhiM(my_nu->PT,my_nu->Eta,my_nu->Phi,my_nu->Mass);
-            Debug_MP =   my_nu_vec - Missing_Particle;
-
-            TLorentzVector Hadronic_Vector = -Missing_Particle;
-
-            std::vector<double> E_Reco_Lst = Electron_Reco(my_nu_vec);
-            std::vector<double> H_Reco_Lst = Hadron_Reco(Hadronic_Vector);
-
-            double sumEPz = my_nu_vec.E() - my_nu_vec.Pz() + ( Hadronic_Vector.E() - Hadronic_Vector.Pz());
-
-            if (Debug){
-                std::cout << "MET pt: " << Missing_Particle.Pt()  << " eta: " << Missing_Particle.Eta() << std::endl;
-                //std::cout << "DebugMP pT = " << Debug_MP.Pt() << " eta = " << Debug_MP.Eta() << std::endl;
-                //std::cout << "DebugMP E, Px, Py, Pz: " << Debug_MP.E() << " " << Debug_MP.Px() << " " << Debug_MP.Py() << " " << Debug_MP.Pz() << std::endl;
-
-                std::cout << "E-Reco Q2: " << E_Reco_Lst[0] << " x: " << E_Reco_Lst[1] << " y: " << E_Reco_Lst[2] << std::endl;
-                std::cout << "H-Reco Q2: " << H_Reco_Lst[0] << " x: " << H_Reco_Lst[1] << " y: " << H_Reco_Lst[2] << std::endl;
-                std::cout << "Reco Higgs Mass?: " << FourLepton_Vector.M() << std::endl;
-                std::cout << "SumPz: " << sumEPz << std::endl;
-            }
-
             hEx_EventCount -> Fill(1.5);
+
+            if (e_par_list.size() != 4) isalleseen = false; // so turns out there are some things that could possibly have 5 and i dont wanna deal with it
             
             if (isalleseen) {
+                TLorentzVector my_nu_vec;
+                
+                my_nu_vec.SetPtEtaPhiM(my_nu->PT,my_nu->Eta,my_nu->Phi,my_nu->Mass);
+                
+                Debug_MP =   my_nu_vec - Missing_Particle;
+
+
+                TLorentzVector Hadronic_Vector = -Missing_Particle;
+
+                std::vector<double> E_Reco_Lst = Electron_Reco(my_nu_vec);
+                std::vector<double> H_Reco_Lst = Hadron_Reco(Hadronic_Vector);
+                std::vector<TLorentzVector> Z_Reco_Lst = ZZ_Reco(e_par_list);
+
+
+                double sumEPz = my_nu_vec.E() - my_nu_vec.Pz() + ( Hadronic_Vector.E() - Hadronic_Vector.Pz());
+                
+
+               
+
+                if (Debug){
+                    std::cout << "MET pt: " << Missing_Particle.Pt()  << " eta: " << Missing_Particle.Eta() << std::endl;
+                    //std::cout << "DebugMP pT = " << Debug_MP.Pt() << " eta = " << Debug_MP.Eta() << std::endl;
+                    //std::cout << "DebugMP E, Px, Py, Pz: " << Debug_MP.E() << " " << Debug_MP.Px() << " " << Debug_MP.Py() << " " << Debug_MP.Pz() << std::endl;
+
+                    std::cout << "E-Reco Q2: " << E_Reco_Lst[0] << " x: " << E_Reco_Lst[1] << " y: " << E_Reco_Lst[2] << std::endl;
+                    std::cout << "H-Reco Q2: " << H_Reco_Lst[0] << " x: " << H_Reco_Lst[1] << " y: " << H_Reco_Lst[2] << std::endl;
+                    std::cout << "Reco Higgs Mass?: " << FourLepton_Vector.M() << std::endl;
+                    std::cout << "SumPz: " << sumEPz << std::endl;
+
+                    std::cout << "ELIST CHECK " << e_par_list[0] -> Charge  << std::endl;
+
+                    // TIME TO DO THE ZZ RECONSTRUCTION BIT HERE//
+                    /*for(double d : ZZ_Reco(e_par_list).M()){
+                        std::cout<<d<<std::endl;
+                    }
+                    */
+                    
+                    for(int oo = 0; oo < 2; ++oo){
+                        //std::cout << e_par_list[oo] -> Charge << std::endl;
+                        std::cout << Z_Reco_Lst[oo].M() << std::endl;
+                    }
+                    
+                    
+                    
+
+                }
+
                 hEx_EventCount -> Fill(2.5);
+                //if (true){ //filling stuff in histogram
+                hEx_EventCount -> Fill(3.5);
 
-                if (true){ 
-                    hEx_EventCount -> Fill(3.5);
+                
+                hEv_MET_eta -> Fill(Missing_Particle.Eta() ,Event_Weight);
+                hEv_MET_Et -> Fill(Missing_Particle.Pt() ,Event_Weight); //pt = et for neutrino
+                
+                hEv_MET_eta_pt -> Fill(Missing_Particle.Eta(), Missing_Particle.Pt());
+                hEv_nue_MET_eta -> Fill(my_nu->Eta, Missing_Particle.Eta());
+                hEv_nue_MET_Et -> Fill(my_nu -> PT, Missing_Particle.Pt());
+                hEv_nue_MET_Phi -> Fill(my_nu -> Phi, Missing_Particle.Phi());
 
-                    
-                    hEv_MET_eta -> Fill(Missing_Particle.Eta() ,Event_Weight);
-                    hEv_MET_Et -> Fill(Missing_Particle.Pt() ,Event_Weight); //pt = et for neutrino
-                    
-                    hEv_MET_eta_pt -> Fill(Missing_Particle.Eta(), Missing_Particle.Pt());
-                    hEv_nue_MET_eta -> Fill(my_nu->Eta, Missing_Particle.Eta());
-                    hEv_nue_MET_Et -> Fill(my_nu -> PT, Missing_Particle.Pt());
-                    hEv_nue_MET_Phi -> Fill(my_nu -> Phi, Missing_Particle.Phi());
+                hEv_debugMP_Pz_E -> Fill(Debug_MP.Pz(), Debug_MP.E());
 
-                    hEv_debugMP_Pz_E -> Fill(Debug_MP.Pz(), Debug_MP.E());
-
-                    hEv_HReco_M -> Fill(FourLepton_Vector.M(), Event_Weight); //not the hadronic vector
+                hEv_HReco_M -> Fill(FourLepton_Vector.M(), Event_Weight); //not the hadronic vector
+                
+                hEv_ZReco_M -> Fill(Z_Reco_Lst[0].M(), Event_Weight);
+                hEv_ZstarReco_M -> Fill(Z_Reco_Lst[1].M(), Event_Weight);
+    
 
 
-                    //try{
-                    hEvR_recoQ2_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[0]), TMath::Log10(H_Reco_Lst[0]));
-                    hEvR_recox_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[1]), TMath::Log10(H_Reco_Lst[1]));
-                    hEvR_recoy_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[2]), TMath::Log10(H_Reco_Lst[2]));
-                    
-                    hEvR_ereco_Q2 -> Fill(TMath::Log10(E_Reco_Lst[0]), Event_Weight);
-                    hEvR_ereco_x -> Fill(TMath::Log10(E_Reco_Lst[1]), Event_Weight);
-                    hEvR_ereco_y -> Fill(TMath::Log10(E_Reco_Lst[2]), Event_Weight);
-                    hEvR_ereco_y_true -> Fill(E_Reco_Lst[2], Event_Weight);
-                    
-                    hEvR_hreco_Q2 -> Fill(TMath::Log10(H_Reco_Lst[0]), Event_Weight);
-                    hEvR_hreco_x -> Fill(TMath::Log10(H_Reco_Lst[1]), Event_Weight);
-                    hEvR_hreco_y -> Fill(TMath::Log10(H_Reco_Lst[2]), Event_Weight);
-                    hEvR_hreco_y_true -> Fill(H_Reco_Lst[2], Event_Weight);
-                    hEvR_hreco_x_Q2 -> Fill(H_Reco_Lst[1], H_Reco_Lst[0]);
+                //try{
+                hEvR_recoQ2_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[0]), TMath::Log10(H_Reco_Lst[0]));
+                hEvR_recox_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[1]), TMath::Log10(H_Reco_Lst[1]));
+                hEvR_recoy_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[2]), TMath::Log10(H_Reco_Lst[2]));
+                
+                hEvR_ereco_Q2 -> Fill(TMath::Log10(E_Reco_Lst[0]), Event_Weight);
+                hEvR_ereco_x -> Fill(TMath::Log10(E_Reco_Lst[1]), Event_Weight);
+                hEvR_ereco_y -> Fill(TMath::Log10(E_Reco_Lst[2]), Event_Weight);
+                hEvR_ereco_y_true -> Fill(E_Reco_Lst[2], Event_Weight);
+                
+                hEvR_hreco_Q2 -> Fill(TMath::Log10(H_Reco_Lst[0]), Event_Weight);
+                hEvR_hreco_x -> Fill(TMath::Log10(H_Reco_Lst[1]), Event_Weight);
+                hEvR_hreco_y -> Fill(TMath::Log10(H_Reco_Lst[2]), Event_Weight);
+                hEvR_hreco_y_true -> Fill(H_Reco_Lst[2], Event_Weight);
+                hEvR_hreco_x_Q2 -> Fill(H_Reco_Lst[1], H_Reco_Lst[0]);
 
-                    hEvR_EPz -> Fill(sumEPz, Event_Weight);
+                hEvR_EPz -> Fill(sumEPz, Event_Weight);
                     
                     /*
                     } catch (...){
@@ -568,7 +713,7 @@ void Process(ExRootTreeReader * treeReader) {
                     */
                     
                 
-                }
+                //}
             }
         }
 	    
@@ -594,7 +739,6 @@ void Process(ExRootTreeReader * treeReader) {
                 hPr_H_eta -> Fill( v->Eta, Event_Weight);
             }
             
-            
 
     		// Look for Z bosons (ID = 23)
             if( v->PID == 23 ) {
@@ -614,14 +758,9 @@ void Process(ExRootTreeReader * treeReader) {
             hEx_ZZ_Mass->Fill( Higgs.M() , Event_Weight );
             aEv_H_eta ->  FillWeighted(isalleseen && is4e, Event_Weight, Higgs.Eta());
             
-
             //do the higgs selectoin events here 
             //as in acceptance of the higgs eta and pt
 	    }
-
-
     } // Loop over all events
-
-
 }
 
