@@ -6,7 +6,7 @@ TODO:
 */
 
 
-bool Debug = true;
+bool Debug = false;
 
 bool LepPass(GenParticle* lep_b){
     //Checks if the electron can be seen by the detector or not
@@ -239,9 +239,9 @@ int main(int argc, char* argv[]) {
     hEv_debugMP_Pz_E = new TH2D("hEv_debugMP_Pz_E","Checking E vs Pz distribution for Nue-MP", 100, -2000, 0, 100, 0, 2000);
 
     //hEv_HReco_M = new TH1D("hEv_HReco_M","Reconstructed Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 50, 0, 400);
-    hEv_HReco_M = new TH1D("hEv_HReco_M","Reconstructed Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 25, 100, 150);
-    hEv_ZReco_M = new TH1D("hEv_ZReco_M","Reconstructed Z Mass; Mass of Reconstructed Particle; Number of Particles", 25, 0, 150);
-    hEv_ZstarReco_M = new TH1D("hEv_ZstarReco_M","Reconstructed Z* Mass; Mass of Reconstructed Particle; Number of Particles", 25, 0, 150);
+    hEv_HReco_M = new TH1D("hEv_HReco_M","Reconstructed Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 75, 0, 150);
+    hEv_ZReco_M = new TH1D("hEv_ZReco_M","Reconstructed Z Mass; Mass of Reconstructed Particle; Number of Particles", 75, 0, 150);
+    hEv_ZstarReco_M = new TH1D("hEv_ZstarReco_M","Reconstructed Z* Mass; Mass of Reconstructed Particle; Number of Particles", 75, 0, 150);
     
     
     hEvR_recoQ2_elec_hadr = new TH2D("hEvR_recoQ2_elec_hadr","2D Histogram of LogQ2, Hadron vs Electron Method; log_{10} Q2 Electron; log_{10} Q2 Hadron", 50, 0, 6.0, 50, 0., 6.);
@@ -346,14 +346,37 @@ int main(int argc, char* argv[]) {
     //hEv_HReco_M->SetLineColor(3);
     //std::cout<<"Yeet" << std::endl;
     //std::cout<<hEv_HReco_M -> GetOption() << std::endl;
+    //hEv_HReco_M -> GetXaxis()->SetRangeUser(100, 150);
     hEv_HReco_M -> Write();
     hEv_ZReco_M -> Write();
     hEv_ZstarReco_M -> Write();
 
     TCanvas *c1 = new TCanvas("c1"," Test",50,50,1680,1050);
-    hEv_ZReco_M -> Draw();
-    hEv_ZstarReco_M -> Draw("Same");
+    TLegend *legend1;
+    
+    hEv_HReco_M -> SetTitle("Reconstruction of Higgs, Z, and Z* Bosons");
+    hEv_HReco_M ->GetXaxis()->SetTitle("Mass (GeV)");
+    hEv_HReco_M ->GetYaxis()->SetTitle("Number of Events");
+    hEv_HReco_M -> GetXaxis()->SetRangeUser(0, 130);
+    hEv_HReco_M -> SetLineColor(kRed);
+    hEv_HReco_M -> SetStats(kFALSE);
+    hEv_HReco_M -> Draw("hist E2");
+
+    hEv_ZReco_M -> SetLineColor(kBlue);
+    hEv_ZReco_M -> Draw("hist same E2");
+
+    hEv_ZstarReco_M->SetLineColor(kGreen);
+    hEv_ZstarReco_M -> Draw("same hist E2");
+
+    legend1 = new TLegend(0.1,0.8,0.25,0.9);
+    legend1->SetHeader("Particles","C"); // option "C" allows to center the header
+    legend1->AddEntry(hEv_HReco_M, "Higgs");
+    legend1->AddEntry(hEv_ZReco_M,"Z Boson");
+    legend1->AddEntry(hEv_ZstarReco_M,"Z* Boson");
+    legend1-> Draw("same"); 
+
     c1 -> Write("TestCanvas");
+    c1 -> Print("TestCanvas.png");
 
 
 
