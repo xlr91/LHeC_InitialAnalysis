@@ -38,6 +38,14 @@ Theres another one, this one is the lighter one
 The sherpa backup
 /disk/moose/general/asc/Y4_LHeC_2021/LHeC_CC_H4l.Sherpa.root
 
+The Fixed file is
+/disk/moose/general/asc/Y4_LHeC_2021/Samples_Py8303_Delphes3.4.3pre06/LHeC_CC_H4l.Delphes.root
+
+The background sample is
+/disk/moose/general/asc/Y4_LHeC_2021/Samples_Py8303_Delphes3.4.3pre06/LHeC_CC_Zll.100k.Delphes.root
+
+The updated background sample is
+/disk/moose/general/asc/Y4_LHeC_2021/Samples_Py8303_Delphes3.4.3pre06/LHeC_CC_Zll.100k.v2.Delphes.root
 # Making changes to the code
 
 Whenever you update the C++ code, make sure you re-compile the code before re-running it by issuing the following command again:

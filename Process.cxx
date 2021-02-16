@@ -1,9 +1,6 @@
 #include "Process.h"
 
-/*
-TODO:
-- find out whats going on with the kinematic fits
-*/
+
 
 
 bool Debug = false;
@@ -137,25 +134,6 @@ std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
             break;
     }
 
-
-    //t<<curr << " " << currind <<std::endl;
-    
-    /*
-    array = [2, 42, 82, 122, 162, 202, 242, 282, 322, 362]
-    number = 112
-    print closest (number, array)
-
-    def closest (num, arr):
-        curr = arr[0]
-        foreach val in arr:
-            if abs (num - val) < abs (num - curr):
-                curr = val
-        return curr
-
-    */
-
-
-    //FINISH THE CODE, MAKE IT RETURN WHAT YOU WANT IT TO RETURN
     return ans;
 }
 
@@ -165,12 +143,14 @@ int main(int argc, char* argv[]) {
 
     const TString InputFile = argv[1];
     const TString OutputFileName = argv[2];
+    const TString FileIdent = argv[3];
 
     std::cout << "-------------------------------------------------------------"  << std::endl;
     std::cout << "Running Process with my edit"  << std::endl;
     std::cout << "-------------------------------------------------------------"  << std::endl;
     std::cout << "InputFile = " << InputFile << std::endl;
     std::cout << "OutputFileName = " << OutputFileName << std::endl;
+    std::cout << "FileIdent = " << FileIdent << std::endl;
     std::cout << "-------------------------------------------------------------"  << std::endl;
 
     ExRootTreeReader * reader = NULL;
@@ -190,7 +170,7 @@ int main(int argc, char* argv[]) {
 
     //Example histograms
     hEx_EventCount = new TH1D("hEx_EventCount","Event Classifications ; Event type; Number of Events",4,0,4);
-    hEx_WeightCount = new TH1D("hEx_WeightCount","",1,0,1);
+    hEx_WeightCount = new TH1D("hEx_WeightCount","",10,0,1);
 
     hEx_Lepton_Pt = new TH1D("hEx_Lepton_Pt","Charged Lepton Events vs pT; Charged Lepton p_{T} [GeV]; Number of Particles / 5 GeV",200,0.0,1000.0);
     hEx_Z_Pt = new TH1D("hEx_Z_Pt","Z Boson Events vs pT; Z p_{T} [GeV]; Number of Particles / 5 GeV",200,0.0,1000.0);
@@ -242,6 +222,7 @@ int main(int argc, char* argv[]) {
     hEv_HReco_M = new TH1D("hEv_HReco_M","Reconstructed Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 75, 0, 150);
     hEv_ZReco_M = new TH1D("hEv_ZReco_M","Reconstructed Z Mass; Mass of Reconstructed Particle; Number of Particles", 75, 0, 150);
     hEv_ZstarReco_M = new TH1D("hEv_ZstarReco_M","Reconstructed Z* Mass; Mass of Reconstructed Particle; Number of Particles", 75, 0, 150);
+    hEv_ZZReco_M = new TH1D("hEv_ZZReco_M","Reconstructed Z and Z* Mass; Mass of Reconstructed Particle; Number of Particles", 75, 0, 150);
     
     
     hEvR_recoQ2_elec_hadr = new TH2D("hEvR_recoQ2_elec_hadr","2D Histogram of LogQ2, Hadron vs Electron Method; log_{10} Q2 Electron; log_{10} Q2 Hadron", 50, 0, 6.0, 50, 0., 6.);
@@ -271,7 +252,7 @@ int main(int argc, char* argv[]) {
     //------------------------------------
 
     // Run the selection
-    Process(reader);
+    Process(reader, FileIdent);
 
     //Writes selection to the output file
     ///std::cout << "Events in EventCount: " << hEx_EventCount->GetEntries() << std::endl;
@@ -341,7 +322,7 @@ int main(int argc, char* argv[]) {
     hEv_nue_MET_Phi -> Write();
     hEv_debugMP_Pz_E -> Write();
 
-    hEv_HReco_M->SetOption("L");
+    //hEv_HReco_M->SetOption("L");
     //hEv_HReco_M->SetFillColorAlpha (2, 1);
     //hEv_HReco_M->SetLineColor(3);
     //std::cout<<"Yeet" << std::endl;
@@ -350,33 +331,38 @@ int main(int argc, char* argv[]) {
     hEv_HReco_M -> Write();
     hEv_ZReco_M -> Write();
     hEv_ZstarReco_M -> Write();
+    hEv_ZZReco_M -> Write();
 
-    TCanvas *c1 = new TCanvas("c1"," Test",50,50,1680,1050);
-    TLegend *legend1;
+    TCanvas *c1 = new TCanvas("c1"," Test",50,50,1680,1050); //initialize TCanvas object
+    TLegend *legend1;  //For now, just defines the legend
     
-    hEv_HReco_M -> SetTitle("Reconstruction of Higgs, Z, and Z* Bosons");
-    hEv_HReco_M ->GetXaxis()->SetTitle("Mass (GeV)");
-    hEv_HReco_M ->GetYaxis()->SetTitle("Number of Events");
-    hEv_HReco_M -> GetXaxis()->SetRangeUser(0, 130);
-    hEv_HReco_M -> SetLineColor(kRed);
-    hEv_HReco_M -> SetStats(kFALSE);
-    hEv_HReco_M -> Draw("hist E2");
+    
+    //note that here we're applying the formatting on the _first_ histogram we wanna stick on tcanvas
+    hEv_HReco_M -> SetTitle("Reconstruction of Higgs, Z, and Z* Bosons"); //sets title of the histogram ur gonna print
+    hEv_HReco_M ->GetXaxis()->SetTitle("Mass (GeV)");  //sets x axis title
+    hEv_HReco_M ->GetYaxis()->SetTitle("Number of Events"); //sets y axis title
+    hEv_HReco_M -> GetXaxis()->SetRangeUser(0, 130); //sets the visual range, like my old histogram goes from 0 to 150 but i wanna show till 130
+    hEv_HReco_M -> SetLineColor(kRed); //changes the bars of the histogram so its red
+    hEv_HReco_M -> SetStats(kFALSE); //removes the annoying 'mean median and entries' box thing
+    hEv_HReco_M -> Draw("hist E2"); //Draws the histogram using the option hist and E2
+    //The Draw command takes hEv_HReco_M with its applied options and sticks it into the TCanvas canvas
 
-    hEv_ZReco_M -> SetLineColor(kBlue);
-    hEv_ZReco_M -> Draw("hist same E2");
+    hEv_ZReco_M -> SetLineColor(kBlue); //this is my second histogram
+    hEv_ZReco_M -> Draw("hist same E2"); //NOTE THE 'SAME' BIT, draws the histogram on the same canvas
 
-    hEv_ZstarReco_M->SetLineColor(kGreen);
+    hEv_ZstarReco_M->SetLineColor(kGreen); //third histogram
     hEv_ZstarReco_M -> Draw("same hist E2");
 
-    legend1 = new TLegend(0.1,0.8,0.25,0.9);
-    legend1->SetHeader("Particles","C"); // option "C" allows to center the header
-    legend1->AddEntry(hEv_HReco_M, "Higgs");
+    legend1 = new TLegend(0.1,0.8,0.25,0.9); // Initialize the TLegend object that you place within the TCanvas object
+    //numbers are (x1, y1, x2, y2), bottom left and top right corner (i think)
+    legend1->SetHeader("Particles","C"); // option "C" allows to center the header. 'Particles' is the Title of the legend
+    legend1->AddEntry(hEv_HReco_M, "Higgs"); //Adds the entry and the label
     legend1->AddEntry(hEv_ZReco_M,"Z Boson");
     legend1->AddEntry(hEv_ZstarReco_M,"Z* Boson");
-    legend1-> Draw("same"); 
+    legend1-> Draw("same");  //Draws on same histogram
 
-    c1 -> Write("TestCanvas");
-    c1 -> Print("TestCanvas.png");
+    c1 -> Write("ReconstructedMass"); //This final command saves the canvas that we've made art on into ur root file
+    //c1 -> Print("TestCanvas.png"); //This command prints the TCanvas as a png which you can view immediately on vscode, highly suggested
 
 
 
@@ -425,7 +411,7 @@ ExRootTreeReader * InitReader(const TString FilePath) {
     return r;
 }
 
-void Process(ExRootTreeReader * treeReader) {
+void Process(ExRootTreeReader * treeReader, TString Ident) {
 
     // Get pointers to branches used in this analysis
     bEvent = treeReader->UseBranch("Event");
@@ -443,8 +429,18 @@ void Process(ExRootTreeReader * treeReader) {
 
     int nSelected = 0;
 
+    float bscale = 6e-7 * 10;
+    float sscale = 1.33e-6 * 10; 
+    float usescale;
+    if(Ident == "s"){
+        usescale = sscale;
+    }
+    else if(Ident == "b"){
+        usescale = bscale;
+    }
+
     std::cout << "-------------------------------------------------------------"  << std::endl;
-    std::cout << "Input: " << numberOfEntries << " events to process" << std::endl;
+    std::cout << "Input: " << numberOfEntries << " events to process, Ident: " << Ident << std::endl;
 
     // Loop over all events
     for(Int_t entry = 0; entry < numberOfEntries; ++entry) {
@@ -456,7 +452,8 @@ void Process(ExRootTreeReader * treeReader) {
         treeReader->ReadEntry(entry);
 
         HepMCEvent * event = (HepMCEvent*) bEvent->At(0); 
-    	const float Event_Weight = event->Weight;
+    	//const float Event_Weight = event->Weight;
+        const float Event_Weight = usescale; //THIS IS WHERE THE EVENT WEIGHT NEEDS TO BE CHANGED FOR THE BACKGROUND SAMPLE AND THE SIGNAL
 
         hEx_EventCount->Fill(0.5);
         hEx_WeightCount->Fill(0.5,Event_Weight);
@@ -482,11 +479,13 @@ void Process(ExRootTreeReader * treeReader) {
 
         if (Debug){ // switch false with debug
             //for(int i = 0; i < bParticle -> GetEntriesFast(); ++i){
+            std::cout << "Event_Weight: " <<  Event_Weight << std::endl;
             for(int i = 0; i < 4; ++i){   
                 GenParticle* p_Particle = (GenParticle*) bParticle->At(i);
                 std::cout << "Particle " << i << " E = " << p_Particle -> E << " pZ = " << p_Particle->Pz << " pT = " << p_Particle->PT << " eta = " << p_Particle->Eta << " phi = " << p_Particle->Phi << " PID = " << p_Particle-> PID << " mass = " << p_Particle->Mass
                     << " Mother: " << p_Particle->M1 << " Daughter: " << p_Particle->D1 << " Status: " << p_Particle -> Status <<  std::endl;
             }
+            
         }
 
         //------------------------------------------------------------------
@@ -708,6 +707,9 @@ void Process(ExRootTreeReader * treeReader) {
                 
                 hEv_ZReco_M -> Fill(Z_Reco_Lst[0].M(), Event_Weight);
                 hEv_ZstarReco_M -> Fill(Z_Reco_Lst[1].M(), Event_Weight);
+
+                hEv_ZZReco_M -> Fill(Z_Reco_Lst[0].M(), Event_Weight);
+                hEv_ZZReco_M -> Fill(Z_Reco_Lst[1].M(), Event_Weight);
     
 
 
