@@ -440,7 +440,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
     }
 
     std::cout << "-------------------------------------------------------------"  << std::endl;
-    std::cout << "Input: " << numberOfEntries << " events to process, Ident: " << Ident << std::endl;
+    std::cout << "Input: " << numberOfEntries << " events to process, Weight: " << usescale << std::endl;
 
     // Loop over all events
     for(Int_t entry = 0; entry < numberOfEntries; ++entry) {
@@ -453,7 +453,8 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
         HepMCEvent * event = (HepMCEvent*) bEvent->At(0); 
     	//const float Event_Weight = event->Weight;
-        const float Event_Weight = usescale; //THIS IS WHERE THE EVENT WEIGHT NEEDS TO BE CHANGED FOR THE BACKGROUND SAMPLE AND THE SIGNAL
+        //const float Event_Weight = usescale; //THIS IS WHERE THE EVENT WEIGHT NEEDS TO BE CHANGED FOR THE BACKGROUND SAMPLE AND THE SIGNAL
+        const float Event_Weight = 1;  //TESTING PURPOSE, REMOVE THIS WHEN DONE
 
         hEx_EventCount->Fill(0.5);
         hEx_WeightCount->Fill(0.5,Event_Weight);
