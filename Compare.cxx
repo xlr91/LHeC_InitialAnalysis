@@ -43,6 +43,9 @@ void Compare(){
     h1_names.push_back("4eEventLevel/KinematicReco/hEvR_hreco_y");
     h1_names.push_back("4eEventLevel/KinematicReco/hEvR_hreco_Q2");
 
+    h1_names.push_back("4eEventLevel/CutsAnalysis/hEvC_Zstar");
+    h1_names.push_back("4eEventLevel/CutsAnalysis/hEvC_Logy");
+
 
     //TH1 loop
 
@@ -75,9 +78,9 @@ void Compare(){
     h2 = (TH1D*) f2 -> Get("4eEventLevel/hEv_HReco_M");   
     
 
-    for(Int_t i = 1; i <= h1 -> GetNbinsX(); i++){
-        //std::cout << h1->GetBinLowEdge(i) << std::endl;
-    }
+    //for(Int_t i = 1; i <= h1 -> GetNbinsX(); i++){
+     //   std::cout << h1->GetBinLowEdge(i) << std::endl;
+    //}
     
 
 
@@ -87,6 +90,18 @@ void Compare(){
     h1 -> SetAxisRange(0, 100, "Y");
     h1 -> Draw("hist E2");
     c1 -> Print("TestCanvas.png");
+
+
+    h1 = (TH1D*) f1 -> Get("4eEventLevel/CutsAnalysis/hEvC_Logy");
+    h2 = (TH1D*) f2 -> Get("4eEventLevel/CutsAnalysis/hEvC_Logy");   
+    
+    //h1 -> SetAxisRange(120, 130, "X");
+    h1 -> Divide(h2);
+    //h1 -> SetAxisRange(0, (h1 -> GetMaximum())*1.1, "Y");
+    h1 -> SetAxisRange(0, 500, "Y");
+    h1 -> Draw("hist E2");
+    c1 -> Print("TestCanvas.png");
+    c1 -> Write("TestCanvas");
 
 
     OutputFile -> Close();

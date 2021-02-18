@@ -167,6 +167,7 @@ int main(int argc, char* argv[]) {
     OutputFile->mkdir("ParticleLevel");
     OutputFile->mkdir("4eEventLevel");
     OutputFile->mkdir("4eEventLevel/KinematicReco");
+    OutputFile->mkdir("4eEventLevel/CutsAnalysis");
 
     //Example histograms
     hEx_EventCount = new TH1D("hEx_EventCount","Event Classifications ; Event type; Number of Events",4,0,4);
@@ -245,7 +246,9 @@ int main(int argc, char* argv[]) {
     hEvR_hreco_x_Q2 = new TH2D("hEvR_hreco_x_Q2","2D Histogram of Q2 vs x for hadron method; x; Q^{2}", 50, 0, 0.2, 50, 0, 45000);
 
     
-
+    hEvC_Zstar = new TH1D("hEvC_Zstar","Z* Mass Cut (Less than); Z* Cut; Number of Particles below Z* cut, between 120-130", 100, 0, 100);
+    hEvC_Logy = new TH1D("hEvC_Logy","Log y Cut (Less than); Log y Cut; Number of Particles below log y cut, between 120-130", 100, -3, 0);
+    
     
     
 
@@ -335,9 +338,13 @@ int main(int argc, char* argv[]) {
 
     TCanvas *c1 = new TCanvas("c1"," Test",50,50,1680,1050); //initialize TCanvas object
     TLegend *legend1;  //For now, just defines the legend
-    
+    double maxhist = hEv_HReco_M -> GetMaximum();
+    if(maxhist < hEv_ZReco_M -> GetMaximum()) maxhist = hEv_ZReco_M -> GetMaximum();
+    if(maxhist < hEv_ZstarReco_M -> GetMaximum()) maxhist = hEv_ZstarReco_M -> GetMaximum();
+
     
     //note that here we're applying the formatting on the _first_ histogram we wanna stick on tcanvas
+    hEv_HReco_M -> SetAxisRange(0, maxhist*1.1, "Y");
     hEv_HReco_M -> SetTitle("Reconstruction of Higgs, Z, and Z* Bosons"); //sets title of the histogram ur gonna print
     hEv_HReco_M ->GetXaxis()->SetTitle("Mass (GeV)");  //sets x axis title
     hEv_HReco_M ->GetYaxis()->SetTitle("Number of Events"); //sets y axis title
@@ -383,6 +390,11 @@ int main(int argc, char* argv[]) {
 
     hEvR_EPz -> Write();
     hEvR_hreco_x_Q2 -> Write();
+
+    OutputFile->cd("4eEventLevel/CutsAnalysis");
+
+    hEvC_Zstar -> Write();
+    hEvC_Logy -> Write();
 
     
 
@@ -443,7 +455,8 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
     std::cout << "Input: " << numberOfEntries << " events to process, Weight: " << usescale << std::endl;
 
     // Loop over all events
-    for(Int_t entry = 0; entry < numberOfEntries; ++entry) {
+    for(Int_t entry = 0; entry < numberOfEntries; ++entry) { 
+    //for(Int_t entry = 11000; entry < 12000; ++entry) { ///CHANGE THIS BACK
 
 
         //if (entry == 1000) Debug = false;
@@ -453,8 +466,8 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
         HepMCEvent * event = (HepMCEvent*) bEvent->At(0); 
     	//const float Event_Weight = event->Weight;
-        //const float Event_Weight = usescale; //THIS IS WHERE THE EVENT WEIGHT NEEDS TO BE CHANGED FOR THE BACKGROUND SAMPLE AND THE SIGNAL
-        const float Event_Weight = 1;  //TESTING PURPOSE, REMOVE THIS WHEN DONE
+        const float Event_Weight = usescale; //THIS IS WHERE THE EVENT WEIGHT NEEDS TO BE CHANGED FOR THE BACKGROUND SAMPLE AND THE SIGNAL
+        //const float Event_Weight = 1;  //TESTING PURPOSE, REMOVE THIS WHEN DONE
 
         hEx_EventCount->Fill(0.5);
         hEx_WeightCount->Fill(0.5,Event_Weight);
@@ -659,7 +672,19 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 double sumEPz = my_nu_vec.E() - my_nu_vec.Pz() + ( Hadronic_Vector.E() - Hadronic_Vector.Pz());
                 
 
+                //Z* and logycut cut analysis//
+                for(int zzz = 1; zzz <= hEvC_Zstar -> GetNbinsX(); zzz++){
+                    if( 120 <= FourLepton_Vector.M() && FourLepton_Vector.M() <= 130){
+                        if(Z_Reco_Lst[1].M() < hEvC_Zstar->GetBinLowEdge(zzz)){
+                            hEvC_Zstar -> Fill(hEvC_Zstar -> GetBinCenter(zzz), Event_Weight);
+                        }
+                        if(TMath::Log10(H_Reco_Lst[2]) < hEvC_Logy -> GetBinLowEdge(zzz)){
+                            hEvC_Logy -> Fill(hEvC_Logy -> GetBinCenter(zzz), Event_Weight);
+                        }
+                    }
+                }
                
+
 
                 if (Debug){
                     std::cout << "MET pt: " << Missing_Particle.Pt()  << " eta: " << Missing_Particle.Eta() << std::endl;
