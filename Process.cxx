@@ -168,6 +168,7 @@ int main(int argc, char* argv[]) {
     OutputFile->mkdir("4eEventLevel");
     OutputFile->mkdir("4eEventLevel/KinematicReco");
     OutputFile->mkdir("4eEventLevel/CutsAnalysis");
+    OutputFile->mkdir("4eEventLevel/CutsAnalysis/Example");
 
     //Example histograms
     hEx_EventCount = new TH1D("hEx_EventCount","Event Classifications ; Event type; Number of Events",4,0,4);
@@ -250,7 +251,23 @@ int main(int argc, char* argv[]) {
     hEvC_Logy = new TH1D("hEvC_Logy","Log y Cut (Less than); Log y Cut; Number of Particles below log y cut, between 120-130", 100, -3, 0);
     
     
+    //logyCut // Andy's Example // Initializations
     
+    nCuts = 100;
+    min_cut = -3;
+    double step_cut =  abs(min_cut) / nCuts;
+    
+
+    for(int n=0; n<nCuts; ++n){
+        TString suffix = "_cut";
+        suffix += n;
+        TString titlething = Form("%d",min_cut + n*step_cut);
+
+        TH1D* h_new_cuts = new TH1D("h_varycut"+suffix, titlething + "; m_{4l} [GeV]; Events / 4 GeV", 50, 50, 250);
+        h_varycut.push_back(h_new_cuts);
+        cut_values.push_back(min_cut + n*step_cut);
+        if(Debug) std::cout<<min_cut + n*step_cut << std::endl;
+    }
 
     //------------------------------------
 
@@ -396,6 +413,15 @@ int main(int argc, char* argv[]) {
     hEvC_Zstar -> Write();
     hEvC_Logy -> Write();
 
+    OutputFile->cd("4eEventLevel/CutsAnalysis/Example");
+
+	for(int n = 0; n < nCuts; ++n) {
+		h_varycut.at(n)->Write();
+	}
+
+    OutputFile->WriteObject(&cut_values, "cut_values");
+
+
     
 
 
@@ -441,7 +467,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
     int nSelected = 0;
 
-    float bscale = 6e-7 * 10;
+    float bscale = 8.9e-6 * 10;
     float sscale = 1.34e-5 * 10; 
     float usescale;
     if(Ident == "s"){
@@ -453,6 +479,11 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
     std::cout << "-------------------------------------------------------------"  << std::endl;
     std::cout << "Input: " << numberOfEntries << " events to process, Weight: " << usescale << std::endl;
+
+
+
+
+
 
     // Loop over all events
     for(Int_t entry = 0; entry < numberOfEntries; ++entry) { 
@@ -469,7 +500,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         const float Event_Weight = usescale; //THIS IS WHERE THE EVENT WEIGHT NEEDS TO BE CHANGED FOR THE BACKGROUND SAMPLE AND THE SIGNAL
         //const float Event_Weight = 1;  //TESTING PURPOSE, REMOVE THIS WHEN DONE
 
-        hEx_EventCount->Fill(0.5);
+        hEx_EventCount->Fill(0.5, Event_Weight);
         hEx_WeightCount->Fill(0.5,Event_Weight);
 
         is4e = true;
@@ -650,7 +681,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
             }
 
-            hEx_EventCount -> Fill(1.5);
+            hEx_EventCount -> Fill(1.5, Event_Weight);
 
             if (e_par_list.size() != 4) isalleseen = false; // so turns out there are some things that could possibly have 5 and i dont wanna deal with it
             
@@ -672,7 +703,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 double sumEPz = my_nu_vec.E() - my_nu_vec.Pz() + ( Hadronic_Vector.E() - Hadronic_Vector.Pz());
                 
 
-                //Z* and logycut cut analysis//
+                //Z* and logycut cut analysis// My Version
                 for(int zzz = 1; zzz <= hEvC_Zstar -> GetNbinsX(); zzz++){
                     if( 120 <= FourLepton_Vector.M() && FourLepton_Vector.M() <= 130){
                         if(Z_Reco_Lst[1].M() < hEvC_Zstar->GetBinLowEdge(zzz)){
@@ -681,6 +712,14 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                         if(TMath::Log10(H_Reco_Lst[2]) < hEvC_Logy -> GetBinLowEdge(zzz)){
                             hEvC_Logy -> Fill(hEvC_Logy -> GetBinCenter(zzz), Event_Weight);
                         }
+                    }
+                }
+
+                //logycut analysis // Andy's example Filling in Histograms
+
+                for(int k = 0; k < nCuts; ++k){
+                    if(TMath::Log10(H_Reco_Lst[2]) < cut_values.at(k)){   
+                        h_varycut.at(k) -> Fill(FourLepton_Vector.M(), Event_Weight);
                     }
                 }
                
@@ -714,9 +753,9 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
                 }
 
-                hEx_EventCount -> Fill(2.5);
+                hEx_EventCount -> Fill(2.5, Event_Weight);
                 //if (true){ //filling stuff in histogram
-                hEx_EventCount -> Fill(3.5);
+                hEx_EventCount -> Fill(3.5, Event_Weight);
 
                 
                 hEv_MET_eta -> Fill(Missing_Particle.Eta() ,Event_Weight);

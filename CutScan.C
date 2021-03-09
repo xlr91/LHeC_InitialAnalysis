@@ -5,7 +5,7 @@ void CutScan() {
 
 	std::vector<TH1D*> h_varycut_signal;
 	std::vector<TH1D*> h_varycut_bkgd;
-
+    //hEvC_Logy = new TH1D(100, -3, 0);
 	int nCuts = 10;
 	double min_cut = 10.0; // GeV
 	double step_cut = 2.0; // GeV

@@ -135,6 +135,11 @@ TH2D * hEvR_hreco_x_Q2;
 TH1D * hEvC_Zstar;
 TH1D * hEvC_Logy;
 
+std::vector<TH1D*> h_varycut;
+std::vector<double> cut_values;
+int nCuts;
+double min_cut; 
+
 
             
 
