@@ -1,8 +1,6 @@
 #include "Process.h"
 
 
-
-
 bool Debug = false;
 
 bool LepPass(GenParticle* lep_b){
@@ -66,18 +64,21 @@ std::vector<double> Hadron_Reco(TLorentzVector had){
 std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
     //returns a list of TLORENTZVECOTR which is [Z, Z*]
     int neg = 0;
+    
     int pos = 2;
     int ind;
 
     double Zmass = 91.1876;
 
-    std::vector<GenParticle*> e_sorted;
+    //std::vector<GenParticle*> e_sorted;
     std::vector<TLorentzVector> e_vecs, Ztry, ans;
     std::vector<double> Ztrymass;
-    e_sorted.resize(e_list.size());
+    //e_sorted.resize(e_list.size());
     e_vecs.resize(e_list.size());
 
     TLorentzVector V_temp;
+
+    std::cout << "ZBP 1" << std::endl;
 
     for(int i = 0; i < e_list.size(); ++i){
         if(e_list[i] -> Charge == -1){
@@ -88,10 +89,12 @@ std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
             ind = pos;
             pos++;
         }
-        e_sorted[ind] = e_list[i];
+        //e_sorted[ind] = e_list[i];
         V_temp.SetPtEtaPhiM(e_list[i]->PT,e_list[i]->Eta,e_list[i]->Phi,e_list[i]->Mass);
         e_vecs[ind] = V_temp;
     }
+
+    std::cout << "ZBP 2" << std::endl;
 
     Ztry.push_back(e_vecs[0] + e_vecs[2]);
     Ztry.push_back(e_vecs[1] + e_vecs[3]);
@@ -106,6 +109,8 @@ std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
     int currind = 0;
     double val;
 
+    std::cout << "ZBP 3" << std::endl;
+
     for(int k = 0; k < Ztrymass.size(); ++k){
         val = Ztrymass[k];
         if(abs(Zmass - val) < abs(Zmass - curr)){
@@ -113,6 +118,8 @@ std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
             currind = k;
         }
     }
+
+    std::cout << "ZBP 4" << std::endl;
 
 
     switch (currind){
@@ -134,11 +141,24 @@ std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
             break;
     }
 
+    
+    std::cout << "ZBP 5" << std::endl;
+
+    
+    /*
+    //DESTROY THE POINTER
+    for (auto p : e_sorted){
+     delete p;
+    } 
+    e_sorted.clear();
+
+    */
+
+
     return ans;
 }
 
 int main(int argc, char* argv[]) {
-
     // Input Delphes File
 
     const TString InputFile = argv[1];
@@ -266,7 +286,7 @@ int main(int argc, char* argv[]) {
         TH1D* h_new_cuts = new TH1D("h_varycut"+suffix, titlething + "; m_{4l} [GeV]; Events / 4 GeV", 50, 50, 250);
         h_varycut.push_back(h_new_cuts);
         cut_values.push_back(min_cut + n*step_cut);
-        if(Debug) std::cout<<min_cut + n*step_cut << std::endl;
+        //if(Debug) std::cout<<min_cut + n*step_cut << std::endl;
     }
 
     //------------------------------------
@@ -276,19 +296,21 @@ int main(int argc, char* argv[]) {
 
     //Writes selection to the output file
     ///std::cout << "Events in EventCount: " << hEx_EventCount->GetEntries() << std::endl;
-    std::cout << "Events in EventCount: " << hEx_EventCount->GetBinContent(1) << std::endl;
-    std::cout << "Events that are 4e  : " << hEx_EventCount->GetBinContent(2) << std::endl;
-    std::cout << "Events seen thats 4e: " << hEx_EventCount->GetBinContent(3) << std::endl;
-    std::cout << "Events seen 4e GJet : " << hEx_EventCount->GetBinContent(4) << std::endl;
+    std::cout << "Events in EventCount  : " << hEx_EventCount->GetBinContent(1) << std::endl;
+    std::cout << "Events that are 4l    : " << hEx_EventCount->GetBinContent(2) << std::endl;
+    std::cout << "Events seen thats 4e  : " << hEx_EventCount->GetBinContent(3) << std::endl;
+    std::cout << "Events seen thats 4mu : " << hEx_EventCount->GetBinContent(4) << std::endl;
     std::cout << "Write to file..." << std::endl;
 
     OutputFile->cd("Example");
 
     TAxis *xAxis = hEx_EventCount -> GetXaxis();
     xAxis -> SetBinLabel(1, "Total Events");
-    xAxis -> SetBinLabel(2, "Total 4e Events");
-    xAxis -> SetBinLabel(3, "Total 4e Events Passing Cuts");
-    xAxis -> SetBinLabel(4, "Total 4e passed cuts with Good Jets");
+    xAxis -> SetBinLabel(2, "Total 4l Events");
+    xAxis -> SetBinLabel(3, "Total Observed 4e Events");
+    xAxis -> SetBinLabel(4, "Total Observed 4mu Events");
+
+    std::cout << "Write Test 0.1" << std::endl;
 
     hEx_EventCount->Write();
     hEx_WeightCount->Write();
@@ -314,6 +336,8 @@ int main(int argc, char* argv[]) {
 
     aPr_e_eta -> Write(); 
     aPr_e_Et -> Write(); 
+
+    std::cout << "Write Test 0.2" << std::endl;
 
 
     OutputFile->cd("4eEventLevel");
@@ -342,52 +366,14 @@ int main(int argc, char* argv[]) {
     hEv_nue_MET_Phi -> Write();
     hEv_debugMP_Pz_E -> Write();
 
-    //hEv_HReco_M->SetOption("L");
-    //hEv_HReco_M->SetFillColorAlpha (2, 1);
-    //hEv_HReco_M->SetLineColor(3);
-    //std::cout<<"Yeet" << std::endl;
-    //std::cout<<hEv_HReco_M -> GetOption() << std::endl;
-    //hEv_HReco_M -> GetXaxis()->SetRangeUser(100, 150);
+    
+    std::cout << "Write Test 0.3" << std::endl;
     hEv_HReco_M -> Write();
     hEv_ZReco_M -> Write();
     hEv_ZstarReco_M -> Write();
     hEv_ZZReco_M -> Write();
-    /*
-        TCanvas *c1 = new TCanvas("c1"," Test",50,50,1680,1050); //initialize TCanvas object
-        TLegend *legend1;  //For now, just defines the legend
-        double maxhist = hEv_HReco_M -> GetMaximum();
-        if(maxhist < hEv_ZReco_M -> GetMaximum()) maxhist = hEv_ZReco_M -> GetMaximum();
-        if(maxhist < hEv_ZstarReco_M -> GetMaximum()) maxhist = hEv_ZstarReco_M -> GetMaximum();
 
-        
-        //note that here we're applying the formatting on the _first_ histogram we wanna stick on tcanvas
-        hEv_HReco_M -> SetAxisRange(0, maxhist*1.1, "Y");
-        hEv_HReco_M -> SetTitle("Reconstruction of Higgs, Z, and Z* Bosons"); //sets title of the histogram ur gonna print
-        hEv_HReco_M ->GetXaxis()->SetTitle("Mass (GeV)");  //sets x axis title
-        hEv_HReco_M ->GetYaxis()->SetTitle("Number of Events"); //sets y axis title
-        hEv_HReco_M -> GetXaxis()->SetRangeUser(0, 130); //sets the visual range, like my old histogram goes from 0 to 150 but i wanna show till 130
-        hEv_HReco_M -> SetLineColor(kRed); //changes the bars of the histogram so its red
-        hEv_HReco_M -> SetStats(kFALSE); //removes the annoying 'mean median and entries' box thing
-        hEv_HReco_M -> Draw("hist E2"); //Draws the histogram using the option hist and E2
-        //The Draw command takes hEv_HReco_M with its applied options and sticks it into the TCanvas canvas
-
-        hEv_ZReco_M -> SetLineColor(kBlue); //this is my second histogram
-        hEv_ZReco_M -> Draw("hist same E2"); //NOTE THE 'SAME' BIT, draws the histogram on the same canvas
-
-        hEv_ZstarReco_M->SetLineColor(kGreen); //third histogram
-        hEv_ZstarReco_M -> Draw("same hist E2");
-
-        legend1 = new TLegend(0.1,0.8,0.25,0.9); // Initialize the TLegend object that you place within the TCanvas object
-        //numbers are (x1, y1, x2, y2), bottom left and top right corner (i think)
-        legend1->SetHeader("Particles","C"); // option "C" allows to center the header. 'Particles' is the Title of the legend
-        legend1->AddEntry(hEv_HReco_M, "Higgs"); //Adds the entry and the label
-        legend1->AddEntry(hEv_ZReco_M,"Z Boson");
-        legend1->AddEntry(hEv_ZstarReco_M,"Z* Boson");
-        legend1-> Draw("same");  //Draws on same histogram
-
-        c1 -> Write("ReconstructedMass"); //This final command saves the canvas that we've made art on into ur root file
-        //c1 -> Print("TestCanvas.png"); //This command prints the TCanvas as a png which you can view immediately on vscode, highly suggested
-    */
+    std::cout << "Write Test 1" << std::endl;
 
 
     OutputFile->cd("4eEventLevel/KinematicReco");
@@ -418,6 +404,8 @@ int main(int argc, char* argv[]) {
 	for(int n = 0; n < nCuts; ++n) {
 		h_varycut.at(n)->Write();
 	}
+
+    std::cout << "Write Test 2" << std::endl;
 
     OutputFile->WriteObject(&cut_values, "cut_values");
 
@@ -461,8 +449,8 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
     Long64_t numberOfEntries = treeReader->GetEntries();
     if (Debug) numberOfEntries = 1000;
 
-    bool is4e; //is the event a 4e event?
-    bool isalleseen; //can all electrons in the event be seen?
+    bool is4e, is4mu; //is the event a 4e event?
+    bool isall4eseen, isall4museen, isall2e2museen; //can all electrons in the event be seen?
     bool goodjet; //is this jet a good jet? (Does its mass *not* correspond to a lepton)
 
     int nSelected = 0;
@@ -487,7 +475,8 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
     // Loop over all events
     for(Int_t entry = 0; entry < numberOfEntries; ++entry) { 
-    //for(Int_t entry = 11000; entry < 12000; ++entry) { ///CHANGE THIS BACK
+    //for(Int_t entry = 78000; entry < 81000; ++entry) { ///CHANGE THIS BACK
+
 
 
         //if (entry == 1000) Debug = false;
@@ -504,7 +493,9 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         hEx_WeightCount->Fill(0.5,Event_Weight);
 
         is4e = true;
-        isalleseen = true;
+        is4mu = true;
+        isall4eseen = true;
+        isall4museen = true;
         TLorentzVector Vec_Lepton_f;
         TLorentzVector Missing_Particle;
         TLorentzVector FourLepton_Vector;
@@ -606,7 +597,9 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 aPr_e_Et -> FillWeighted(LepPass(lep), Event_Weight, TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)));
 
                 //check if all 4e events seen 
-                if(!LepPass(lep)) isalleseen = false;                
+                if(!LepPass(lep)) isall4eseen = false;  
+                is4mu = false;  
+
             }
 
             if( abs(lep->PID) == 12) {
@@ -618,19 +611,28 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
             //if it contains a muon, its definitely not a 4e event 
             if (abs(lep -> PID) == 13){
+                if(!LepPass(lep)) isall4museen = false;  
                 is4e = false;
             }
         } // Lepton Loop
 
         
         //Lepton loop again but for 4e events only
-        if (is4e){
+
+        //is4e = false;
+        //is4mu = false;
+
+        std::cout << entry << " start ok" << std::endl;
+        if (is4e || is4mu){
             TLorentzVector Debug_MP;
             std::vector<GenParticle*> e_par_list;
             if (Debug) {
-                std::cout << "This is a 4e event. Seen: " << isalleseen << std::endl;  
+                if(is4e) std::cout << "This is a 4e event. Seen: " << isall4eseen << std::endl;  
+                if(is4mu) std::cout << "This is a 4mu event. Seen: " << isall4museen << std::endl;  
             }
             
+            
+
             //into lepton for loop again, this time its only  4e events
             for(int i = 0; i < bTruthLepton->GetEntriesFast(); ++i){
                 GenParticle* lep_e = (GenParticle*) bTruthLepton->At(i);
@@ -640,7 +642,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 if( abs(lep_e->PID) == 12) {
                     hEv_nue_eta_nocuts -> Fill( lep_e-> Eta ,Event_Weight);
                     hEv_nue_Et_nocuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);
-                    if (isalleseen){
+                    if (isall4eseen || isall4museen){
                         my_nu = lep_e;
                         //fill the electron neutrino comparison with missing energy
                         hEv_nue_eta_wicuts -> Fill( lep_e-> Eta ,Event_Weight);
@@ -650,7 +652,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                     }
                 }
                 
-                if( abs(lep_e->PID) == 11){
+                if( abs(lep_e->PID) == 11 || abs(lep_e->PID) == 13){
                     hEv_e_eta_nocuts -> Fill( -(lep_e -> Eta) , Event_Weight);
                     hEv_e_Et_nocuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);
 
@@ -683,26 +685,38 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
             hEx_EventCount -> Fill(1.5, Event_Weight);
 
-            if (e_par_list.size() != 4) isalleseen = false; // so turns out there are some things that could possibly have 5 and i dont wanna deal with it
+            if (e_par_list.size() != 4){
+                isall4eseen = false;
+                isall4museen = false;
+            } // so turns out there are some things that could possibly have 5 and i dont wanna deal with it
             
-            if (isalleseen) {
+            std::cout << "BreakPoint 1" << std::endl;
+            
+            if (isall4eseen || isall4museen) {
                 TLorentzVector my_nu_vec;
                 
                 my_nu_vec.SetPtEtaPhiM(my_nu->PT,my_nu->Eta,my_nu->Phi,my_nu->Mass);
                 
                 Debug_MP =   my_nu_vec - Missing_Particle;
 
+                if(is4e) std::cout << "4e" << std::endl;
+                if(is4mu) std::cout << "4mu" << std::endl;
+                std::cout << "BreakPoint 2" << std::endl;
 
                 TLorentzVector Hadronic_Vector = -Missing_Particle;
 
                 std::vector<double> E_Reco_Lst = Electron_Reco(my_nu_vec);
+                std::cout << "BreakPoint 2.1" << std::endl;
                 std::vector<double> H_Reco_Lst = Hadron_Reco(Hadronic_Vector);
+                std::cout << "BreakPoint 2.2" << std::endl;
                 std::vector<TLorentzVector> Z_Reco_Lst = ZZ_Reco(e_par_list);
+                std::cout << "BreakPoint 2.3" << std::endl;
 
+                std::cout << "BreakPoint 3" << std::endl;
 
                 double sumEPz = my_nu_vec.E() - my_nu_vec.Pz() + ( Hadronic_Vector.E() - Hadronic_Vector.Pz());
                 
-
+                std::cout << "BreakPoint 4" << std::endl;
                 //Z* and logycut cut analysis// My Version
                 for(int zzz = 1; zzz <= hEvC_Zstar -> GetNbinsX(); zzz++){
                     if( 120 <= FourLepton_Vector.M() && FourLepton_Vector.M() <= 130){
@@ -715,6 +729,9 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                     }
                 }
 
+                
+                std::cout << "BreakPoint 5" << std::endl;
+
                 //logycut analysis // Andy's example Filling in Histograms
 
                 for(int k = 0; k < nCuts; ++k){
@@ -722,7 +739,9 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                         h_varycut.at(k) -> Fill(FourLepton_Vector.M(), Event_Weight);
                     }
                 }
-               
+
+                std::cout << "BreakPoint 6" << std::endl;
+                
 
 
                 if (Debug){
@@ -753,9 +772,10 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
                 }
 
-                hEx_EventCount -> Fill(2.5, Event_Weight);
+                std::cout << "BreakPoint 7" << std::endl;
+                if(is4e)  hEx_EventCount -> Fill(2.5, Event_Weight);
                 //if (true){ //filling stuff in histogram
-                hEx_EventCount -> Fill(3.5, Event_Weight);
+                if(is4mu) hEx_EventCount -> Fill(3.5, Event_Weight);
 
                 
                 hEv_MET_eta -> Fill(Missing_Particle.Eta() ,Event_Weight);
@@ -804,10 +824,15 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                     
                 
                 //}
+
+                std::cout << "BreakPoint 8" << std::endl;
             }
+            
         }
 	    
 
+
+        std::cout << entry << " end ok" << std::endl;
         //------------------------------------------------------------------
         // W/Z/H Boson Loop
         //------------------------------------------------------------------
@@ -846,7 +871,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 		    TLorentzVector Higgs = list_Zboson.at(0) + list_Zboson.at(1);
 
             hEx_ZZ_Mass->Fill( Higgs.M() , Event_Weight );
-            aEv_H_eta ->  FillWeighted(isalleseen && is4e, Event_Weight, Higgs.Eta());
+            aEv_H_eta ->  FillWeighted(isall4eseen && is4e, Event_Weight, Higgs.Eta());
             
             //do the higgs selectoin events here 
             //as in acceptance of the higgs eta and pt
