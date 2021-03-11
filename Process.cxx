@@ -2,6 +2,9 @@
 
 
 bool Debug = false;
+bool suppress4e = false;
+bool suppress4mu = false;
+bool suppress2e2mu = false;
 
 bool LepPass(GenParticle* lep_b){
     //Checks if the electron can be seen by the detector or not
@@ -168,7 +171,7 @@ int main(int argc, char* argv[]) {
     OutputFile->mkdir("4eEventLevel/CutsAnalysis/Example");
 
     //Example histograms
-    hEx_EventCount = new TH1D("hEx_EventCount","Event Classifications ; Event type; Number of Events",4,0,4);
+    hEx_EventCount = new TH1D("hEx_EventCount","Event Classifications ; Event type; Number of Events",5,0,5);
     hEx_WeightCount = new TH1D("hEx_WeightCount","",10,0,1);
 
     hEx_Lepton_Pt = new TH1D("hEx_Lepton_Pt","Charged Lepton Events vs pT; Charged Lepton p_{T} [GeV]; Number of Particles / 5 GeV",200,0.0,1000.0);
@@ -257,10 +260,11 @@ int main(int argc, char* argv[]) {
 
     //Writes selection to the output file
     ///std::cout << "Events in EventCount: " << hEx_EventCount->GetEntries() << std::endl;
-    std::cout << "Events in EventCount  : " << hEx_EventCount->GetBinContent(1) << std::endl;
-    std::cout << "Events that are 4l    : " << hEx_EventCount->GetBinContent(2) << std::endl;
-    std::cout << "Events seen thats 4e  : " << hEx_EventCount->GetBinContent(3) << std::endl;
-    std::cout << "Events seen thats 4mu : " << hEx_EventCount->GetBinContent(4) << std::endl;
+    std::cout << "Events in EventCount    : " << hEx_EventCount->GetBinContent(1) << std::endl;
+    std::cout << "Events that are 4l      : " << hEx_EventCount->GetBinContent(2) << std::endl;
+    std::cout << "Events seen thats 4e    : " << hEx_EventCount->GetBinContent(3) << std::endl;
+    std::cout << "Events seen thats 4mu   : " << hEx_EventCount->GetBinContent(4) << std::endl;
+    std::cout << "Events seen thats 2e2mu : " << hEx_EventCount->GetBinContent(5) << std::endl;
     std::cout << "Write to file..." << std::endl;
 
     OutputFile->cd("Example");
@@ -270,6 +274,7 @@ int main(int argc, char* argv[]) {
     xAxis -> SetBinLabel(2, "Total 4l Events");
     xAxis -> SetBinLabel(3, "Total Observed 4e Events");
     xAxis -> SetBinLabel(4, "Total Observed 4mu Events");
+    xAxis -> SetBinLabel(5, "Total Observed 2e2mu Events");
 
     std::cout << "Write Test 0.1" << std::endl;
 
@@ -407,11 +412,13 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
     Long64_t numberOfEntries = treeReader->GetEntries();
     if (Debug) numberOfEntries = 1000;
 
-    bool is4e, is4mu, good4e, good4mu; //is the event a 4e event?
+    bool is4e, is4mu, is2e2mu, good4e, good4mu, good2e2mu; //is the event a 4e event?
     bool isall4eseen, isall4museen, isall2e2museen; //can all electrons in the event be seen?
     bool goodjet; //is this jet a good jet? (Does its mass *not* correspond to a lepton)
 
     int nSelected = 0;
+    int ecount = 0;
+    int mucount = 0;
 
     float bscale = 8.9e-6 * 10;
     float sscale = 1.34e-5 * 10; 
@@ -443,10 +450,15 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
         is4e = true;
         is4mu = true;
+        is2e2mu = false;
         isall4eseen = true;
         isall4museen = true;
+        isall2e2museen = true;
         good4e = false;
         good4mu = false;
+        good2e2mu = false;
+        ecount = 0;
+        mucount = 0;
         TLorentzVector Vec_Lepton_f;
         TLorentzVector Missing_Particle;
         TLorentzVector FourLepton_Vector;
@@ -543,9 +555,9 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 aPr_e_Et -> FillWeighted(LepPass(lep), Event_Weight, TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)));
 
                 //check if all 4e events seen 
-                if(!LepPass(lep)) isall4eseen = false;  
+                if(!LepPass(lep)){ isall4eseen = false; isall2e2museen = false;}
                 is4mu = false;  
-
+                ecount++;
             }
 
             if( abs(lep->PID) == 12) {
@@ -557,19 +569,27 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
             //if it contains a muon, its definitely not a 4e event 
             if (abs(lep -> PID) == 13){
-                if(!LepPass(lep)) isall4museen = false;  
+                if(!LepPass(lep)) {isall4museen = false ;  isall2e2museen = false;}  
                 is4e = false;
+                mucount++;
             }
         } // Lepton Loop
 
+        if(ecount == 2 && mucount == 2) is2e2mu = true;
+        
+        if(suppress4e) is4e = false;
+        if(suppress4mu) is4mu = false;
+        if(suppress2e2mu) is2e2mu = false;
+
         
 
-        if (is4e || is4mu){
+        if (is4e || is4mu || is2e2mu){
             TLorentzVector Debug_MP;
             std::vector<GenParticle*> e_par_list;
             if (Debug) {
                 if(is4e) std::cout << "This is a 4e event. Seen: " << isall4eseen << std::endl;  
                 if(is4mu) std::cout << "This is a 4mu event. Seen: " << isall4museen << std::endl;  
+                if(is2e2mu) std::cout << "This is a 2e2mu event. Seen: " << isall2e2museen << std::endl;  
             }
             
             //into lepton for loop again, this time its only  4e events
@@ -620,6 +640,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
             if (e_par_list.size() != 4){
                 isall4eseen = false;
                 isall4museen = false;
+                isall2e2museen = false;
             } 
 
             int sanityp = 0;
@@ -637,17 +658,19 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
             if(!(sanityp == 2 && sanityn == 2)){
                 isall4eseen = false;
                 isall4museen = false;
+                isall2e2museen = false;
             }
             
             if(isall4eseen && is4e) good4e = true;
             if(isall4museen && is4mu) good4mu = true;
+            if(isall2e2museen && is2e2mu) good2e2mu = true;
             if(Debug) std::cout << good4e << good4mu << std::endl;
 
-            //insert suppresion factors here 
 
-            if (good4e || good4mu) {
+            if (good4e || good4mu || good2e2mu) {
                 if(is4e)  hEx_EventCount -> Fill(2.5, Event_Weight);
                 if(is4mu) hEx_EventCount -> Fill(3.5, Event_Weight);
+                if(is2e2mu) hEx_EventCount -> Fill(4.5, Event_Weight);
                 
                 TLorentzVector my_nu_vec;
                 
