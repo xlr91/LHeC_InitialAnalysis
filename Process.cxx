@@ -16,7 +16,7 @@ bool LepPass(GenParticle* lep_b){
         return true;
     }
     return false; //lets remove the cuts
-    //return true; //lets remove the cuts
+    
 }  
 
 
@@ -64,21 +64,16 @@ std::vector<double> Hadron_Reco(TLorentzVector had){
 std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
     //returns a list of TLORENTZVECOTR which is [Z, Z*]
     int neg = 0;
-    
     int pos = 2;
     int ind;
 
     double Zmass = 91.1876;
 
-    //std::vector<GenParticle*> e_sorted;
     std::vector<TLorentzVector> e_vecs, Ztry, ans;
     std::vector<double> Ztrymass;
-    //e_sorted.resize(e_list.size());
     e_vecs.resize(e_list.size());
-
     TLorentzVector V_temp;
 
-    std::cout << "ZBP 1" << std::endl;
 
     for(int i = 0; i < e_list.size(); ++i){
         if(e_list[i] -> Charge == -1){
@@ -89,13 +84,10 @@ std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
             ind = pos;
             pos++;
         }
-        //e_sorted[ind] = e_list[i];
         V_temp.SetPtEtaPhiM(e_list[i]->PT,e_list[i]->Eta,e_list[i]->Phi,e_list[i]->Mass);
-        e_vecs[ind] = V_temp;
+        e_vecs.at(ind) = V_temp;
     }
-
-    std::cout << "ZBP 2" << std::endl;
-
+  
     Ztry.push_back(e_vecs[0] + e_vecs[2]);
     Ztry.push_back(e_vecs[1] + e_vecs[3]);
     Ztry.push_back(e_vecs[0] + e_vecs[3]);
@@ -109,8 +101,6 @@ std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
     int currind = 0;
     double val;
 
-    std::cout << "ZBP 3" << std::endl;
-
     for(int k = 0; k < Ztrymass.size(); ++k){
         val = Ztrymass[k];
         if(abs(Zmass - val) < abs(Zmass - curr)){
@@ -118,8 +108,6 @@ std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
             currind = k;
         }
     }
-
-    std::cout << "ZBP 4" << std::endl;
 
 
     switch (currind){
@@ -141,19 +129,6 @@ std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
             break;
     }
 
-    
-    std::cout << "ZBP 5" << std::endl;
-
-    
-    /*
-    //DESTROY THE POINTER
-    for (auto p : e_sorted){
-     delete p;
-    } 
-    e_sorted.clear();
-
-    */
-
 
     return ans;
 }
@@ -163,7 +138,9 @@ int main(int argc, char* argv[]) {
 
     const TString InputFile = argv[1];
     const TString OutputFileName = argv[2];
+
     const TString FileIdent = argv[3];
+    //const TString FileIdent = 's';
 
     std::cout << "-------------------------------------------------------------"  << std::endl;
     std::cout << "Running Process with my edit"  << std::endl;
@@ -271,23 +248,7 @@ int main(int argc, char* argv[]) {
     hEvC_Logy = new TH1D("hEvC_Logy","Log y Cut (Less than); Log y Cut; Number of Particles below log y cut, between 120-130", 100, -3, 0);
     
     
-    //logyCut // Andy's Example // Initializations
-    
-    nCuts = 100;
-    min_cut = -3;
-    double step_cut =  abs(min_cut) / nCuts;
-    
 
-    for(int n=0; n<nCuts; ++n){
-        TString suffix = "_cut";
-        suffix += n;
-        TString titlething = Form("%d",min_cut + n*step_cut);
-
-        TH1D* h_new_cuts = new TH1D("h_varycut"+suffix, titlething + "; m_{4l} [GeV]; Events / 4 GeV", 50, 50, 250);
-        h_varycut.push_back(h_new_cuts);
-        cut_values.push_back(min_cut + n*step_cut);
-        //if(Debug) std::cout<<min_cut + n*step_cut << std::endl;
-    }
 
     //------------------------------------
 
@@ -410,9 +371,6 @@ int main(int argc, char* argv[]) {
     OutputFile->WriteObject(&cut_values, "cut_values");
 
 
-    
-
-
     OutputFile->Close();
 
     std::cout << "Tidy..." << std::endl;
@@ -449,7 +407,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
     Long64_t numberOfEntries = treeReader->GetEntries();
     if (Debug) numberOfEntries = 1000;
 
-    bool is4e, is4mu; //is the event a 4e event?
+    bool is4e, is4mu, good4e, good4mu; //is the event a 4e event?
     bool isall4eseen, isall4museen, isall2e2museen; //can all electrons in the event be seen?
     bool goodjet; //is this jet a good jet? (Does its mass *not* correspond to a lepton)
 
@@ -469,25 +427,16 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
     std::cout << "Input: " << numberOfEntries << " events to process, Weight: " << usescale << std::endl;
 
 
-
-
-
-
     // Loop over all events
     for(Int_t entry = 0; entry < numberOfEntries; ++entry) { 
-    //for(Int_t entry = 78000; entry < 81000; ++entry) { ///CHANGE THIS BACK
-
-
-
-        //if (entry == 1000) Debug = false;
+    //for(Int_t entry = 11000; entry < 12000; ++entry) { ///CHANGE THIS BACK
 
         // Load selected branches with data from specified event
         treeReader->ReadEntry(entry);
 
         HepMCEvent * event = (HepMCEvent*) bEvent->At(0); 
-    	//const float Event_Weight = event->Weight;
-        const float Event_Weight = usescale; //THIS IS WHERE THE EVENT WEIGHT NEEDS TO BE CHANGED FOR THE BACKGROUND SAMPLE AND THE SIGNAL
-        //const float Event_Weight = 1;  //TESTING PURPOSE, REMOVE THIS WHEN DONE
+        const float Event_Weight = usescale; 
+        
 
         hEx_EventCount->Fill(0.5, Event_Weight);
         hEx_WeightCount->Fill(0.5,Event_Weight);
@@ -496,6 +445,8 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         is4mu = true;
         isall4eseen = true;
         isall4museen = true;
+        good4e = false;
+        good4mu = false;
         TLorentzVector Vec_Lepton_f;
         TLorentzVector Missing_Particle;
         TLorentzVector FourLepton_Vector;
@@ -510,18 +461,16 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         }
 
         //------------------------------------------------------------------
-        // Particle Loop (Debug only for now)
+        // Particle Loop (Debug only)
         //------------------------------------------------------------------
 
         if (Debug){ // switch false with debug
-            //for(int i = 0; i < bParticle -> GetEntriesFast(); ++i){
             std::cout << "Event_Weight: " <<  Event_Weight << std::endl;
             for(int i = 0; i < 4; ++i){   
                 GenParticle* p_Particle = (GenParticle*) bParticle->At(i);
                 std::cout << "Particle " << i << " E = " << p_Particle -> E << " pZ = " << p_Particle->Pz << " pT = " << p_Particle->PT << " eta = " << p_Particle->Eta << " phi = " << p_Particle->Phi << " PID = " << p_Particle-> PID << " mass = " << p_Particle->Mass
                     << " Mother: " << p_Particle->M1 << " Daughter: " << p_Particle->D1 << " Status: " << p_Particle -> Status <<  std::endl;
             }
-            
         }
 
         //------------------------------------------------------------------
@@ -551,15 +500,12 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 if (false) std::cout << "   Jet with Lepton " << j << "  Delta R: " << Vec_Lepton_injet.DeltaR(Vec_Jet) << std::endl; //if debug
             }        
             
-            //if (Debug) std::cout << " Good jet: " << goodjet << std::endl;
-
             if (goodjet){
                 Missing_Particle = Missing_Particle - Vec_Jet;
                 if (Debug){ 
                     std::cout << " MP pt: " << Missing_Particle.Pt() << " eta: " << Missing_Particle.Eta() << std::endl;
                     std::cout << " Jet E, Px, Py, Pz: " << Vec_Jet.E() << " " << Vec_Jet.Px() << " " << Vec_Jet.Py() << " " << Vec_Jet.Pz() << std::endl;
-                    std::cout << " MP  E, Px, Py, Pz: " << Missing_Particle.E() << " " << Missing_Particle.Px() << " " << Missing_Particle.Py() << " " << Missing_Particle.Pz() << std::endl;
-                    
+                    std::cout << " MP  E, Px, Py, Pz: " << Missing_Particle.E() << " " << Missing_Particle.Px() << " " << Missing_Particle.Py() << " " << Missing_Particle.Pz() << std::endl; 
                 }
             }
 
@@ -617,12 +563,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         } // Lepton Loop
 
         
-        //Lepton loop again but for 4e events only
 
-        //is4e = false;
-        //is4mu = false;
-
-        std::cout << entry << " start ok" << std::endl;
         if (is4e || is4mu){
             TLorentzVector Debug_MP;
             std::vector<GenParticle*> e_par_list;
@@ -631,8 +572,6 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 if(is4mu) std::cout << "This is a 4mu event. Seen: " << isall4museen << std::endl;  
             }
             
-            
-
             //into lepton for loop again, this time its only  4e events
             for(int i = 0; i < bTruthLepton->GetEntriesFast(); ++i){
                 GenParticle* lep_e = (GenParticle*) bTruthLepton->At(i);
@@ -663,19 +602,10 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                         hEv_e_eta_wicuts -> Fill( lep_e -> Eta , Event_Weight);
                         hEv_e_Et_wicuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);   
                         
-
                         e_par_list.push_back(lep_e);
-
 
                         Missing_Particle = Missing_Particle - Vec_Lepton_e;
                         FourLepton_Vector = FourLepton_Vector + Vec_Lepton_e;
-                        if(Debug) {
-                            //std::cout << "4elep " << i << " pT = " << Vec_Lepton_e.Pt() << " eta = " << Vec_Lepton_e.Eta() <<  std::endl;
-                            //std::cout << " MPNow pT = " << Missing_Particle.Pt() << " eta = " << Missing_Particle.Eta() << std::endl;
-                            //std::cout << "  4ee E, Px, Py, Pz: " << Vec_Lepton_e.E() << " " << Vec_Lepton_e.Px() << " " << Vec_Lepton_e.Py() << " " << Vec_Lepton_e.Pz() << std::endl;
-                            //std::cout << "  MPe E, Px, Py, Pz: " << Missing_Particle.E() << " " << Missing_Particle.Px() << " " << Missing_Particle.Py() << " " << Missing_Particle.Pz() << std::endl;
-                        }
-    
                     }
 
                     hEv_e_eta_pt -> Fill(lep_e -> Eta, lep_e -> PT);
@@ -685,38 +615,57 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
             hEx_EventCount -> Fill(1.5, Event_Weight);
 
+            
+            // Event santiy check here. It needs to be 4 events, and it needs to be 2 pos and 2 neg
             if (e_par_list.size() != 4){
                 isall4eseen = false;
                 isall4museen = false;
-            } // so turns out there are some things that could possibly have 5 and i dont wanna deal with it
+            } 
+
+            int sanityp = 0;
+            int sanityn = 0;
+
+            for(int i = 0; i < e_par_list.size(); ++i){
+                if(e_par_list[i] -> Charge == -1){
+                    sanityn++;
+                }
+                else if(e_par_list[i] -> Charge == 1){
+                    sanityp++;
+                }
+            }
+
+            if(!(sanityp == 2 && sanityn == 2)){
+                isall4eseen = false;
+                isall4museen = false;
+            }
             
-            std::cout << "BreakPoint 1" << std::endl;
-            
-            if (isall4eseen || isall4museen) {
+            if(isall4eseen && is4e) good4e = true;
+            if(isall4museen && is4mu) good4mu = true;
+            if(Debug) std::cout << good4e << good4mu << std::endl;
+
+            //insert suppresion factors here 
+
+            if (good4e || good4mu) {
+                if(is4e)  hEx_EventCount -> Fill(2.5, Event_Weight);
+                if(is4mu) hEx_EventCount -> Fill(3.5, Event_Weight);
+                
                 TLorentzVector my_nu_vec;
                 
                 my_nu_vec.SetPtEtaPhiM(my_nu->PT,my_nu->Eta,my_nu->Phi,my_nu->Mass);
                 
                 Debug_MP =   my_nu_vec - Missing_Particle;
 
-                if(is4e) std::cout << "4e" << std::endl;
-                if(is4mu) std::cout << "4mu" << std::endl;
-                std::cout << "BreakPoint 2" << std::endl;
+                if(is4e&&Debug) std::cout << "4e" << std::endl;
+                if(is4mu&&Debug) std::cout << "4mu" << std::endl;
 
                 TLorentzVector Hadronic_Vector = -Missing_Particle;
 
                 std::vector<double> E_Reco_Lst = Electron_Reco(my_nu_vec);
-                std::cout << "BreakPoint 2.1" << std::endl;
                 std::vector<double> H_Reco_Lst = Hadron_Reco(Hadronic_Vector);
-                std::cout << "BreakPoint 2.2" << std::endl;
-                std::vector<TLorentzVector> Z_Reco_Lst = ZZ_Reco(e_par_list);
-                std::cout << "BreakPoint 2.3" << std::endl;
-
-                std::cout << "BreakPoint 3" << std::endl;
+                std::vector<TLorentzVector> Z_Reco_Lst = ZZ_Reco(e_par_list);  
 
                 double sumEPz = my_nu_vec.E() - my_nu_vec.Pz() + ( Hadronic_Vector.E() - Hadronic_Vector.Pz());
                 
-                std::cout << "BreakPoint 4" << std::endl;
                 //Z* and logycut cut analysis// My Version
                 for(int zzz = 1; zzz <= hEvC_Zstar -> GetNbinsX(); zzz++){
                     if( 120 <= FourLepton_Vector.M() && FourLepton_Vector.M() <= 130){
@@ -729,53 +678,22 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                     }
                 }
 
-                
-                std::cout << "BreakPoint 5" << std::endl;
-
-                //logycut analysis // Andy's example Filling in Histograms
-
-                for(int k = 0; k < nCuts; ++k){
-                    if(TMath::Log10(H_Reco_Lst[2]) < cut_values.at(k)){   
-                        h_varycut.at(k) -> Fill(FourLepton_Vector.M(), Event_Weight);
-                    }
-                }
-
-                std::cout << "BreakPoint 6" << std::endl;
-                
-
-
                 if (Debug){
                     std::cout << "MET pt: " << Missing_Particle.Pt()  << " eta: " << Missing_Particle.Eta() << std::endl;
-                    //std::cout << "DebugMP pT = " << Debug_MP.Pt() << " eta = " << Debug_MP.Eta() << std::endl;
-                    //std::cout << "DebugMP E, Px, Py, Pz: " << Debug_MP.E() << " " << Debug_MP.Px() << " " << Debug_MP.Py() << " " << Debug_MP.Pz() << std::endl;
-
                     std::cout << "E-Reco Q2: " << E_Reco_Lst[0] << " x: " << E_Reco_Lst[1] << " y: " << E_Reco_Lst[2] << std::endl;
                     std::cout << "H-Reco Q2: " << H_Reco_Lst[0] << " x: " << H_Reco_Lst[1] << " y: " << H_Reco_Lst[2] << std::endl;
                     std::cout << "Reco Higgs Mass?: " << FourLepton_Vector.M() << std::endl;
                     std::cout << "SumPz: " << sumEPz << std::endl;
 
                     std::cout << "ELIST CHECK " << e_par_list[0] -> Charge  << std::endl;
-
-                    // TIME TO DO THE ZZ RECONSTRUCTION BIT HERE//
-                    /*for(double d : ZZ_Reco(e_par_list).M()){
-                        std::cout<<d<<std::endl;
-                    }
-                    */
                     
                     for(int oo = 0; oo < 2; ++oo){
-                        //std::cout << e_par_list[oo] -> Charge << std::endl;
                         std::cout << Z_Reco_Lst[oo].M() << std::endl;
                     }
-                    
-                    
-                    
-
+                                  
                 }
 
-                std::cout << "BreakPoint 7" << std::endl;
-                if(is4e)  hEx_EventCount -> Fill(2.5, Event_Weight);
-                //if (true){ //filling stuff in histogram
-                if(is4mu) hEx_EventCount -> Fill(3.5, Event_Weight);
+
 
                 
                 hEv_MET_eta -> Fill(Missing_Particle.Eta() ,Event_Weight);
@@ -816,23 +734,10 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
                 hEvR_EPz -> Fill(sumEPz, Event_Weight);
                     
-                    /*
-                    } catch (...){
-                        std::cout << "Caught exception while printing histogram" << std::endl;
-                    }
-                    */
-                    
-                
-                //}
-
-                std::cout << "BreakPoint 8" << std::endl;
             }
             
         }
-	    
-
-
-        std::cout << entry << " end ok" << std::endl;
+	            
         //------------------------------------------------------------------
         // W/Z/H Boson Loop
         //------------------------------------------------------------------

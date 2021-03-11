@@ -210,7 +210,7 @@ void Compare(){
 
     double sob;
     for(int i = 0 ; i < h1->GetNbinsX(); i++){
-        std::cout << h1 -> GetBinLowEdge(i) << " " << h1->GetBinContent(i) << " " << h2->GetBinContent(i) << std::endl;
+        //std::cout << h1 -> GetBinLowEdge(i) << " " << h1->GetBinContent(i) << " " << h2->GetBinContent(i) << std::endl;
         
         sob  =  h1->GetBinContent(i) / h2->GetBinContent(i);
         if(std::isinf(sob) || std::isnan(sob)) sob = 0;
@@ -219,7 +219,7 @@ void Compare(){
     }
 
     
-    std::cout<<h1->GetNbinsX()<<std::endl;
+    //std::cout<<h1->GetNbinsX()<<std::endl;
     //h1 -> Divide(h2);
     h1 -> SetAxisRange(0, (h1->GetBinContent(h1->GetMaximumBin()) * 1.1), "Y");
     //h1 -> SetAxisRange(0, 500, "Y");
@@ -230,12 +230,10 @@ void Compare(){
     c1 -> Print("TestCanvas.png");
     c1 -> Write("TestCanvas");
 
-    
-    
-
-    std::cout<<"test3"<<std::endl;
 
 
+
+    /*
     //Cut analysis Andy's example//
     //retrieve the cut_value vector
     std::vector<double> *tmp;
@@ -291,6 +289,8 @@ void Compare(){
 
     h_Scan_Signif->Write();
 	h_Scan_Snr->Write();
+
+    */
 
 
     OutputFile -> Close();
