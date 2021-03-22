@@ -89,6 +89,7 @@ TH1D * hEv_nue_Et_wicuts;
 TH1D * hEv_MET_eta;
 TH1D * hEv_MET_Et;
 
+
 TH2D * hEv_e_eta_pt;
 
 TH2D * hEv_nue_eta_pt_wicuts;
@@ -109,6 +110,10 @@ TH1D * hEv_HReco_M;
 TH1D * hEv_ZReco_M;
 TH1D * hEv_ZstarReco_M;
 TH1D * hEv_ZZReco_M;
+TH1D * hEv_ZCurr_M;
+
+TH1D * hEv_jet_eta;
+TH1D * hEv_H_eta;
 
 
 

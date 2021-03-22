@@ -221,11 +221,15 @@ int main(int argc, char* argv[]) {
     hEv_debugMP_Pz_E = new TH2D("hEv_debugMP_Pz_E","Checking E vs Pz distribution for Nue-MP", 100, -2000, 0, 100, 0, 2000);
 
     //hEv_HReco_M = new TH1D("hEv_HReco_M","Reconstructed Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 50, 0, 400);
-    hEv_HReco_M = new TH1D("hEv_HReco_M","Reconstructed Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 75, 0, 150);
-    hEv_ZReco_M = new TH1D("hEv_ZReco_M","Reconstructed Z Mass; Mass of Reconstructed Particle; Number of Particles", 75, 0, 150);
-    hEv_ZstarReco_M = new TH1D("hEv_ZstarReco_M","Reconstructed Z* Mass; Mass of Reconstructed Particle; Number of Particles", 75, 0, 150);
-    hEv_ZZReco_M = new TH1D("hEv_ZZReco_M","Reconstructed Z and Z* Mass; Mass of Reconstructed Particle; Number of Particles", 75, 0, 150);
+    hEv_HReco_M = new TH1D("hEv_HReco_M","Reconstructed Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 100, 0, 200);
+    hEv_ZReco_M = new TH1D("hEv_ZReco_M","Reconstructed Z Mass; Mass of Reconstructed Particle; Number of Particles", 100, 0, 200);
+    hEv_ZstarReco_M = new TH1D("hEv_ZstarReco_M","Reconstructed Z* Mass; Mass of Reconstructed Particle; Number of Particles", 100, 0, 200);
+    hEv_ZZReco_M = new TH1D("hEv_ZZReco_M","Reconstructed Z and Z* Mass; Mass of Reconstructed Particle; Number of Particles", 100, 0, 200);
+    hEv_ZCurr_M = new TH1D("hEv_ZCurr_M","Reconstructed 4l Mass of Background; Mass of Reconstructed Particle (GeV); Number of Particles", 100, 0, 1000);
     
+    
+    hEv_jet_eta = new TH1D("hEv_jet_eta","Scattered quark  vs pseudorapidity; Jet #eta; Number of Particles", 50, -5.0, 5.0);
+    hEv_H_eta = new TH1D("hEv_H_eta","Higgs vs pseudorapidity; Higgs #eta; Number of Particles", 50, -5.0, 5.0);
     
     hEvR_recoQ2_elec_hadr = new TH2D("hEvR_recoQ2_elec_hadr","2D Histogram of LogQ2, Hadron vs Electron Method; log_{10} Q2 Electron; log_{10} Q2 Hadron", 50, 0, 6.0, 50, 0., 6.);
     hEvR_recox_elec_hadr = new TH2D("hEvR_recox_elec_hadr","2D Histogram of Logx, Hadron vs Electron Method; log_{10} x Electron; log_{10} x Hadron", 50, -7, 0, 50, -7., 0.);
@@ -333,13 +337,17 @@ int main(int argc, char* argv[]) {
     hEv_debugMP_Pz_E -> Write();
 
     
-    std::cout << "Write Test 0.3" << std::endl;
+
     hEv_HReco_M -> Write();
     hEv_ZReco_M -> Write();
     hEv_ZstarReco_M -> Write();
     hEv_ZZReco_M -> Write();
+    hEv_ZCurr_M -> Write();
 
-    std::cout << "Write Test 1" << std::endl;
+
+    hEv_jet_eta -> Write();
+    hEv_H_eta -> Write();
+  
 
 
     OutputFile->cd("4eEventLevel/KinematicReco");
@@ -422,12 +430,19 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
     float bscale = 8.9e-6 * 10;
     float sscale = 1.34e-5 * 10; 
+    float zscale = 2.41e-6 * 100;
     float usescale;
     if(Ident == "s"){
         usescale = sscale;
     }
     else if(Ident == "b"){
         usescale = bscale;
+    }
+    else if(Ident == "z"){
+        usescale = zscale;
+    }
+    else{
+        usescale = 1;
     }
 
     std::cout << "-------------------------------------------------------------"  << std::endl;
@@ -592,7 +607,12 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 if(is2e2mu) std::cout << "This is a 2e2mu event. Seen: " << isall2e2museen << std::endl;  
             }
             
+
+            if ((isall4eseen || isall4museen || isall2e2museen) && Missing_Particle.Eta() != 0) hEv_jet_eta -> Fill(Missing_Particle.Eta(), Event_Weight);
             //into lepton for loop again, this time its only  4e events
+            bool interestingjet = true;
+            if(Missing_Particle.Eta() == 0) interestingjet = false;
+
             for(int i = 0; i < bTruthLepton->GetEntriesFast(); ++i){
                 GenParticle* lep_e = (GenParticle*) bTruthLepton->At(i);
                 TLorentzVector Vec_Lepton_e;
@@ -601,10 +621,10 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 if( abs(lep_e->PID) == 12) {
                     hEv_nue_eta_nocuts -> Fill( lep_e-> Eta ,Event_Weight);
                     hEv_nue_Et_nocuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);
-                    if (isall4eseen || isall4museen){
+                    if (isall4eseen || isall4museen || isall2e2museen){
                         my_nu = lep_e;
                         //fill the electron neutrino comparison with missing energy
-                        hEv_nue_eta_wicuts -> Fill( lep_e-> Eta ,Event_Weight);
+                        if(interestingjet) hEv_nue_eta_wicuts -> Fill( -(lep_e-> Eta) ,Event_Weight);
                         hEv_nue_Et_wicuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);
 
                         hEv_nue_eta_pt_wicuts -> Fill(lep_e-> Eta,  lep_e-> PT);
@@ -732,10 +752,13 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 hEv_HReco_M -> Fill(FourLepton_Vector.M(), Event_Weight); //not the hadronic vector
                 
                 hEv_ZReco_M -> Fill(Z_Reco_Lst[0].M(), Event_Weight);
+                hEv_ZCurr_M -> Fill(FourLepton_Vector.M(), Event_Weight);
                 hEv_ZstarReco_M -> Fill(Z_Reco_Lst[1].M(), Event_Weight);
 
                 hEv_ZZReco_M -> Fill(Z_Reco_Lst[0].M(), Event_Weight);
                 hEv_ZZReco_M -> Fill(Z_Reco_Lst[1].M(), Event_Weight);
+
+                hEv_H_eta -> Fill(-(FourLepton_Vector.Eta()), Event_Weight);
     
 
 
