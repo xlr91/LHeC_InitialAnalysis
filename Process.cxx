@@ -3,8 +3,8 @@
 
 bool Debug = true;
 bool suppress4e = false;
-bool suppress4mu = false;
-bool suppress2e2mu = false;
+bool suppress4mu = true;
+bool suppress2e2mu = true;
 
 bool LepPass(GenParticle* lep_b){
     //Checks if the electron can be seen by the detector or not
@@ -135,6 +135,19 @@ std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
 
     return ans;
 }
+
+
+
+
+double ptSmear(TRandom* gR, GenParticle* lep_s){
+    double res;
+    res = (lep_s -> PT) * (lep_s -> PT) * 8e-4;
+
+    return gR->Gaus(0, res);
+
+}
+
+//double ESmear(){}
 
 int main(int argc, char* argv[]) {
     // Input Delphes File
@@ -591,7 +604,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 ecount++;
 
 
-                ePt_deteff.push_back(gRandom -> Gaus(50, 1));
+                ePt_deteff.push_back(ptSmear(gRandom, lep));
             }
 
             if( abs(lep->PID) == 12) {
@@ -761,8 +774,8 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                         std::cout << Z_Reco_Lst[oo].M() << std::endl;
                     }
 
-                    std::cout << "Random Number: " << gRandom->Gaus(0, 1) << std::endl;
-                                  
+                    std::cout << "Random Number: " << TestSmear(gRandom) << std::endl;
+
                 }
 
 

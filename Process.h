@@ -167,4 +167,6 @@ std::vector<double> Electron_Reco(TLorentzVector scat);
 std::vector<double> Hadron_Reco(TLorentzVector had);
 
 std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> test);
+
+double ptSmear(TRandom* gR, GenParticle* lep_s)
 //double jetlepdR (TLorentzVector jet_v, TLorentzVector lep_v)
