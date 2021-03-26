@@ -90,6 +90,8 @@ TH1D * hEv_MET_eta;
 TH1D * hEv_MET_Et;
 
 
+
+
 TH2D * hEv_e_eta_pt;
 
 TH2D * hEv_nue_eta_pt_wicuts;
@@ -139,6 +141,8 @@ TH2D * hEvR_hreco_x_Q2;
 
 TH1D * hEvC_Zstar;
 TH1D * hEvC_Logy;
+
+TH1D * hEvS_e_Et_wicuts;
 
 std::vector<TH1D*> h_varycut;
 std::vector<double> cut_values;

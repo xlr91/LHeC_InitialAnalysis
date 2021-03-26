@@ -236,9 +236,7 @@ void Compare(){
         axis->Draw();
         c1 -> Write(h1_names[k] + "_scale");
         h2 -> Scale(1/scale);
-        
-
-
+    
     }
 
 
@@ -275,23 +273,13 @@ void Compare(){
     hstk -> SetTitle("Stacked Histogram of Mass Distribution of H, ZZ*, and Z/Z*"); //sets title of the histogram ur gonna print
     hstk ->GetXaxis()->SetTitle("M_{4l} (GeV)");  //sets x axis title
     hstk ->GetYaxis()->SetTitle("Events"); //sets y axis title
-    /*
-    herr = (TH1D*) f1 -> Get("4eEventLevel/hEv_HReco_M");
-    herr -> Add(h2);
-    herr -> Add(h3);
-    herr -> SetLineColor(0);
-    //herr -> SetFillColor(17);
-    herr -> Draw("SAME E3");
-    */
     c1 -> Write("stacktest");
     c1 -> Print("stacktest.png");
 
 
     
 
-    //for(Int_t i = 1; i <= h1 -> GetNbinsX(); i++){
-     //   std::cout << h1->GetBinLowEdge(i) << std::endl;
-    //}
+
     
 
 
@@ -307,6 +295,8 @@ void Compare(){
 
     h1 = (TH1D*) f1 -> Get("4eEventLevel/CutsAnalysis/hEvC_Logy");
     h2 = (TH1D*) f2 -> Get("4eEventLevel/CutsAnalysis/hEvC_Logy");  
+
+    
 
     
     
@@ -331,71 +321,37 @@ void Compare(){
     
     
     h1 -> Draw("hist E2");
-    //c1 -> Print("TestCanvas.png");
     c1 -> Write("TestCanvas");
 
 
 
 
-    /*
-    //Cut analysis Andy's example//
-    //retrieve the cut_value vector
-    std::vector<double> *tmp;
-    f1 -> GetObject("cut_values", tmp);
-    std::vector<double> cut_values = *tmp;
+
+    //Smearing Framework
+
+    h1 = (TH1D*) f1 -> Get("4eEventLevel/hEv_e_Et_wicuts");
+    h2 = (TH1D*) f2 -> Get("4eEventLevel/Smearing/hEvS_e_Et_wicuts");      
     
-    TH1D* h_Scan_Signif = new TH1D("h_Scan_Signif","; Log y Cut; S/sqrt(B);",cut_values.size(),cut_values.front(),cut_values.back());
-    TH1D* h_Scan_Snr = new TH1D("h_Scan_Snr","; Log y Cut; S/B;",cut_values.size(),cut_values.front(),cut_values.back());
 
-    TString histcutname;
-
-    for(int n = 0; n < cut_values.size(); ++n){
-        histcutname = "4eEventLevel/CutsAnalysis/Example/h_varycut_cut" + std::to_string(n);
-        //std::cout << histcutname << std::endl;
+    histmax = h1 -> GetMaximum();
+    if(histmax < h2 -> GetMaximum()) histmax = h2 -> GetMaximum();
 
 
-        hs = (TH1D*) f1 -> Get(histcutname);
-        hb = (TH1D*) f2 -> Get(histcutname);
+    h1 -> SetAxisRange(0, histmax*1.1, "Y");
+    h1 -> SetLineColor(2);
+    h1 -> SetFillColor(2);
+    h2 -> SetLineColor(4);
 
-        //std::cout << hs -> GetMaximum() << std::endl;
-        
-        int bin_low = hs ->FindBin(120);
-        int bin_high= hs ->FindBin(130);
 
-        double integral_sig = hs -> Integral(bin_low, bin_high);
-        double integral_bkgd = hb -> Integral(bin_low, bin_high); 
+    h1 -> Draw("hist E2");
+    h2 -> Draw("same hist E2");
 
-        double signif = integral_sig / sqrt(integral_bkgd);
-        double snr = integral_sig/integral_bkgd;
-
-        int bin_thing = h_Scan_Signif -> FindBin(cut_values.at(n));
-
-        
-        if(std::isinf(signif) || std::isnan(signif)) signif = 0;
-        if(std::isinf(snr) || std::isnan(snr)) snr = 0;
-
-        
-        
-        std::cout << "-----------" << std::endl;
-		std::cout << "Cut value = " << cut_values.at(n) << " GeV" << std::endl;
-		//std::cout << "S/sqrt(B) = " << signif << std::endl;
-		std::cout << "S = " <<integral_sig << ", B = " << integral_bkgd << ", S/B = " << snr << std::endl;
-        //std::cout << "is inf? " << std::isinf(snr) << std::endl;
-        
-
-        
-
-        h_Scan_Signif -> SetBinContent(bin_thing, signif);
-        h_Scan_Snr -> SetBinContent(bin_thing, snr);
-        
-    }
-    std::cout<<h_Scan_Snr -> GetNbinsX() << std::endl;
-
-    h_Scan_Signif->Write();
-	h_Scan_Snr->Write();
-
-    */
-
+    legend = new TLegend(0.1,0.8,0.25,0.9);
+    legend->SetHeader("Histogram Markers","C"); // option "C" allows to center the header
+    legend->AddEntry(h1, "Signal");
+    legend->AddEntry(h2, "Smearing");
+    legend-> Draw("same"); 
+    c1 -> Write("Smearing Test");
 
     OutputFile -> Close();
 }
