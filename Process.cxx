@@ -1,12 +1,12 @@
 #include "Process.h"
 
 
-bool Debug = true;
+bool Debug = false;
 bool suppress4e = false;
 bool suppress4mu = true;
 bool suppress2e2mu = true;
 
-bool LepPass(GenParticle* lep_b){
+bool LepPass(GenParticle* lep_b, double ptsmear = 0){
     //Checks if the electron can be seen by the detector or not
     
     //Parameters
@@ -15,7 +15,7 @@ bool LepPass(GenParticle* lep_b){
     double ptmin = 5;
 
     //selection criteria
-    if( etamin < lep_b -> Eta && lep_b -> Eta<  etamax && ptmin < lep_b -> PT){
+    if( etamin < lep_b -> Eta && lep_b -> Eta<  etamax && ptmin < (lep_b -> PT + ptsmear)){
         return true;
     }
     return false; //lets remove the cuts
@@ -268,8 +268,8 @@ int main(int argc, char* argv[]) {
     hEvC_Zstar = new TH1D("hEvC_Zstar","Z* Mass Cut (Less than); Z* Cut; Number of Particles below Z* cut, between 120-130", 100, 0, 100);
     hEvC_Logy = new TH1D("hEvC_Logy","Log y Cut (Less than); Log y Cut; Number of Particles below log y cut, between 120-130", 100, -3, 0);
 
-
-    hEvS_e_Et_wicuts = new TH1D("hEvS_e_Et_wicuts","Electron smeared particles vs transverse energy; Electron E_{T} ; Number of Particles", 50, 0, 150);
+    hEvS_e_pt = new TH1D("hEvS_e_pt","Electron particles vs transverse momentum; Electron p_{T} ; Number of Particles", 50, 0, 150);
+    hEvS_e_pt_S = new TH1D("hEvS_e_pt_S","Electron smeared particles vs transverse energy; Electron p_{T} ; Number of Particles", 50, 0, 150);
     
     
 
@@ -393,7 +393,8 @@ int main(int argc, char* argv[]) {
     OutputFile->cd("4eEventLevel/CutsAnalysis/Example");
 
     OutputFile->cd("4eEventLevel/Smearing");
-    hEvS_e_Et_wicuts -> Write();
+    hEvS_e_pt -> Write();
+    hEvS_e_pt_S -> Write();
 
 	for(int n = 0; n < nCuts; ++n) {
 		h_varycut.at(n)->Write();
@@ -471,7 +472,9 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
     //Make random number generator
     gRandom = new TRandom3();
     gRandom -> SetSeed(0);
-    std::vector<double> ePt_deteff;
+    std::vector<double> ePt_deteff, ePt_noeff;
+
+    double temppts, tempes;
 
 
     // Loop over all events
@@ -592,19 +595,25 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
             }
 
             if( abs(lep->PID) == 11) {
+                temppts = ptSmear(gRandom, lep);
+                ePt_deteff.push_back(temppts);
+                ePt_noeff.push_back(lep -> PT);
+                
+                
+                if(Debug) std::cout<<"smearing pt: "<< temppts << std::endl;
                 hPr_e_eta -> Fill( lep-> Eta ,Event_Weight);
                 hPr_e_Et -> Fill( TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)), Event_Weight);
                 
-                aPr_e_eta -> FillWeighted(LepPass(lep), Event_Weight, lep->Eta);
-                aPr_e_Et -> FillWeighted(LepPass(lep), Event_Weight, TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)));
+                aPr_e_eta -> FillWeighted(LepPass(lep, temppts), Event_Weight, lep->Eta);
+                aPr_e_Et -> FillWeighted(LepPass(lep, temppts), Event_Weight, TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)));
 
                 //check if all 4e events seen 
-                if(!LepPass(lep)){ isall4eseen = false; isall2e2museen = false;}
+                if(!LepPass(lep, temppts)){ isall4eseen = false; isall2e2museen = false;}
                 is4mu = false;  
                 ecount++;
 
 
-                ePt_deteff.push_back(ptSmear(gRandom, lep));
+                
             }
 
             if( abs(lep->PID) == 12) {
@@ -621,6 +630,8 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 mucount++;
 
                 ePt_deteff.push_back(gRandom -> Gaus(75, 1));
+                ePt_noeff.push_back(lep -> PT);
+                
             }
         } // Lepton Loop
 
@@ -652,7 +663,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
             for(int i = 0; i < bTruthLepton->GetEntriesFast(); ++i){
                 GenParticle* lep_e = (GenParticle*) bTruthLepton->At(i);
                 TLorentzVector Vec_Lepton_e;
-                Vec_Lepton_e.SetPtEtaPhiM(lep_e->PT,lep_e->Eta,lep_e->Phi,lep_e->Mass);
+                Vec_Lepton_e.SetPtEtaPhiM(lep_e->PT,lep_e->Eta,lep_e->Phi,lep_e->Mass); //change this for smearing
 
                 if( abs(lep_e->PID) == 12) {
                     hEv_nue_eta_nocuts -> Fill( lep_e-> Eta ,Event_Weight);
@@ -671,14 +682,20 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                     hEv_e_eta_nocuts -> Fill( -(lep_e -> Eta) , Event_Weight);
                     hEv_e_Et_nocuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);
 
-                    hEvS_e_Et_wicuts -> Fill(TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)) + ePt_deteff.at(lepint_temp), Event_Weight);
-                    std::cout << "Lepton Number " << i << "vector loc" << lepint_temp <<  std::endl;
-                    lepint_temp++;
+                    //hEvS_e_pt_S -> Fill(TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)) + ePt_deteff.at(lepint_temp), Event_Weight);
+                    
+                    
+                    
+                    
 
-                    aEv_e_eta -> FillWeighted(LepPass(lep_e), Event_Weight, lep_e->Eta);
-                    aEv_e_Et -> FillWeighted(LepPass(lep_e), Event_Weight, TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)));
+                    if(Debug) std::cout << "Lepton Number " << i << "vector loc" << lepint_temp <<  std::endl;
+                    if(Debug) std::cout << "smeared pT: " << lep_e -> PT  + ePt_deteff.at(lepint_temp) << std::endl;
+                    
 
-                    if(LepPass(lep_e)){
+                    aEv_e_eta -> FillWeighted(LepPass(lep_e, ePt_deteff.at(lepint_temp)), Event_Weight, lep_e->Eta);
+                    aEv_e_Et -> FillWeighted(LepPass(lep_e, ePt_deteff.at(lepint_temp)), Event_Weight, TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)));
+
+                    if(LepPass(lep_e, ePt_deteff.at(lepint_temp))){
                         hEv_e_eta_wicuts -> Fill( lep_e -> Eta , Event_Weight);
                         hEv_e_Et_wicuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);   
                         
@@ -689,6 +706,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                     }
 
                     hEv_e_eta_pt -> Fill(lep_e -> Eta, lep_e -> PT);
+                    lepint_temp++;
                 }
 
             }
@@ -774,7 +792,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                         std::cout << Z_Reco_Lst[oo].M() << std::endl;
                     }
 
-                    std::cout << "Random Number: " << TestSmear(gRandom) << std::endl;
+                    //std::cout << "Random Number: " << ptSmear(gRandom) << std::endl;
 
                 }
 
@@ -821,6 +839,14 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 hEvR_hreco_x_Q2 -> Fill(H_Reco_Lst[1], H_Reco_Lst[0]);
 
                 hEvR_EPz -> Fill(sumEPz, Event_Weight);
+
+
+                
+                for(int indx=0; indx < 4; ++indx){
+                    hEvS_e_pt -> Fill(ePt_noeff.at(indx), Event_Weight);
+                    hEvS_e_pt_S -> Fill(ePt_noeff.at(indx) + ePt_deteff.at(indx), Event_Weight); 
+                }
+                
                     
             }
             
@@ -871,6 +897,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 	    }
 
         ePt_deteff.clear();
+        ePt_noeff.clear();
     } // Loop over all events
 }
 

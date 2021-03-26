@@ -329,8 +329,8 @@ void Compare(){
 
     //Smearing Framework
 
-    h1 = (TH1D*) f1 -> Get("4eEventLevel/hEv_e_Et_wicuts");
-    h2 = (TH1D*) f2 -> Get("4eEventLevel/Smearing/hEvS_e_Et_wicuts");      
+    h1 = (TH1D*) f1 -> Get("4eEventLevel/Smearing/hEvS_e_pt");
+    h2 = (TH1D*) f2 -> Get("4eEventLevel/Smearing/hEvS_e_pt_S");      
     
 
     histmax = h1 -> GetMaximum();

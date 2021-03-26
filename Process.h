@@ -142,7 +142,9 @@ TH2D * hEvR_hreco_x_Q2;
 TH1D * hEvC_Zstar;
 TH1D * hEvC_Logy;
 
-TH1D * hEvS_e_Et_wicuts;
+TH1D * hEvS_e_pt;
+TH1D * hEvS_e_pt_S;
+
 
 std::vector<TH1D*> h_varycut;
 std::vector<double> cut_values;
@@ -161,12 +163,13 @@ void ClearBranches();
 
 int main(int argc, char* argv[]);
 
-bool LepPass(GenParticle* lep_b);
+//bool LepPass(GenParticle* lep_b);
+bool LepPass(GenParticle* lep_b, double ptsmear);
 
 std::vector<double> Electron_Reco(TLorentzVector scat);
 std::vector<double> Hadron_Reco(TLorentzVector had);
 
 std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> test);
 
-double ptSmear(TRandom* gR, GenParticle* lep_s)
+double ptSmear(TRandom* gR, GenParticle* lep_s);
 //double jetlepdR (TLorentzVector jet_v, TLorentzVector lep_v)
