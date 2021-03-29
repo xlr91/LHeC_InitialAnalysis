@@ -240,41 +240,45 @@ void Compare(){
     }
 
 
-    ///SIGNAL OVER BACKROUND STUFF
+    ///Stacked Histogram Stuff
+    std::vector<TString> h1St_names;
+    h1St_names.push_back("4eEventLevel/Smearing/hEv_HReco_M");
+    h1St_names.push_back("4eEventLevel/Smearing/hEv_HReco_M_S");
 
-    h1 = (TH1D*) f1 -> Get("4eEventLevel/hEv_HReco_M");
-    h2 = (TH1D*) f2 -> Get("4eEventLevel/hEv_HReco_M");
-    h3 = (TH1D*) f3 -> Get("4eEventLevel/hEv_HReco_M");
+    for(Int_t k = 0; k < h1St_names.size(); k++){
 
-    h1 -> SetFillColor(38);
-    h2 -> SetFillColor(2);
-    h3 -> SetFillColor(46);
+        h1 = (TH1D*) f1 -> Get(h1St_names[k]);
+        h2 = (TH1D*) f2 -> Get(h1St_names[k]);
+        h3 = (TH1D*) f3 -> Get(h1St_names[k]);
 
-    h1 -> SetLineColor(38);
-    h2 -> SetLineColor(2);
-    h3 -> SetLineColor(46);
+        h1 -> SetFillColor(38);
+        h2 -> SetFillColor(2);
+        h3 -> SetFillColor(46);
 
-    
+        h1 -> SetLineColor(38);
+        h2 -> SetLineColor(2);
+        h3 -> SetLineColor(46);
+        
+        THStack *hstk = new THStack("hstk","");
+        hstk -> Add(h2);
+        hstk -> Add(h3);
+        hstk -> Add(h1);
+        hstk -> Draw("HIST");
 
+        legend = new TLegend(0.1,0.7,0.35,0.9);
+        legend->SetHeader("Histogram Markers","C"); // option "C" allows to center the header
+        legend->AddEntry(h1, "Signal");
+        legend->AddEntry(h2, "ZZ Background");
+        legend->AddEntry(h3, "Z Background");
+        legend-> Draw("same"); 
 
-    THStack *hstk = new THStack("hstk","");
-    hstk -> Add(h2);
-    hstk -> Add(h3);
-    hstk -> Add(h1);
-    hstk -> Draw("HIST");
+        hstk -> SetTitle("Stacked Histogram of Mass Distribution of H, ZZ*, and Z/Z*"); //sets title of the histogram ur gonna print
+        hstk ->GetXaxis()->SetTitle("M_{4l} (GeV)");  //sets x axis title
+        hstk ->GetYaxis()->SetTitle("Events"); //sets y axis title
+        TString titlestack = Form("%d",k);
+        c1 -> Write("stacktest" + titlestack);
 
-    legend = new TLegend(0.1,0.7,0.35,0.9);
-    legend->SetHeader("Histogram Markers","C"); // option "C" allows to center the header
-    legend->AddEntry(h1, "Signal");
-    legend->AddEntry(h2, "ZZ Background");
-    legend->AddEntry(h3, "Z Background");
-    legend-> Draw("same"); 
-
-    hstk -> SetTitle("Stacked Histogram of Mass Distribution of H, ZZ*, and Z/Z*"); //sets title of the histogram ur gonna print
-    hstk ->GetXaxis()->SetTitle("M_{4l} (GeV)");  //sets x axis title
-    hstk ->GetYaxis()->SetTitle("Events"); //sets y axis title
-    c1 -> Write("stacktest");
-    c1 -> Print("stacktest.png");
+    }
 
 
     
@@ -328,30 +332,36 @@ void Compare(){
 
 
     //Smearing Framework
+    std::vector<TString> h1S_names;
+    h1S_names.push_back("4eEventLevel/Smearing/hEvS_e_pt");
+    h1S_names.push_back("4eEventLevel/Smearing/hEvS_e_E");
+    h1S_names.push_back("4eEventLevel/Smearing/hEv_HReco_M");
 
-    h1 = (TH1D*) f1 -> Get("4eEventLevel/Smearing/hEvS_e_pt");
-    h2 = (TH1D*) f2 -> Get("4eEventLevel/Smearing/hEvS_e_pt_S");      
-    
+    for(Int_t k = 0; k < h1S_names.size(); k++){
+        h1 = (TH1D*) f1 -> Get(h1S_names[k]);
+        h2 = (TH1D*) f1 -> Get(h1S_names[k] + "_S");
+        histmax = h1 -> GetMaximum();
+        if(histmax < h2 -> GetMaximum()) histmax = h2 -> GetMaximum();
 
-    histmax = h1 -> GetMaximum();
-    if(histmax < h2 -> GetMaximum()) histmax = h2 -> GetMaximum();
+        h1 -> SetAxisRange(0, histmax*1.1, "Y");
+        h1 -> SetLineColor(2);
+        h1 -> SetFillColor(2);
+        h2 -> SetLineColor(4);
+
+        //h2-> SetFillColor(7);
+        //h2-> SetFillColorAlpha(7,0);
 
 
-    h1 -> SetAxisRange(0, histmax*1.1, "Y");
-    h1 -> SetLineColor(2);
-    h1 -> SetFillColor(2);
-    h2 -> SetLineColor(4);
+        h1 -> Draw("hist");
+        h2 -> Draw("same hist");
 
-
-    h1 -> Draw("hist E2");
-    h2 -> Draw("same hist E2");
-
-    legend = new TLegend(0.1,0.8,0.25,0.9);
-    legend->SetHeader("Histogram Markers","C"); // option "C" allows to center the header
-    legend->AddEntry(h1, "Signal");
-    legend->AddEntry(h2, "Smearing");
-    legend-> Draw("same"); 
-    c1 -> Write("Smearing Test");
+        legend = new TLegend(0.1,0.8,0.25,0.9);
+        legend->SetHeader("Histogram Markers","C"); // option "C" allows to center the header
+        legend->AddEntry(h1, "Signal");
+        legend->AddEntry(h2, "Smearing");
+        legend-> Draw("same"); 
+        c1 -> Write(h1S_names[k]);
+    }
 
     OutputFile -> Close();
 }

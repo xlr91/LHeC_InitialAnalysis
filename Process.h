@@ -145,6 +145,12 @@ TH1D * hEvC_Logy;
 TH1D * hEvS_e_pt;
 TH1D * hEvS_e_pt_S;
 
+TH1D * hEvS_e_E;
+TH1D * hEvS_e_E_S;
+
+TH1D * hEv_HReco_M_S;
+TH1D * hEv_ZReco_M_S;
+TH1D * hEv_ZstarReco_M_S;
 
 std::vector<TH1D*> h_varycut;
 std::vector<double> cut_values;
@@ -172,4 +178,5 @@ std::vector<double> Hadron_Reco(TLorentzVector had);
 std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> test);
 
 double ptSmear(TRandom* gR, GenParticle* lep_s);
+double ESmear(TRandom* gR, GenParticle* lep_s);
 //double jetlepdR (TLorentzVector jet_v, TLorentzVector lep_v)
