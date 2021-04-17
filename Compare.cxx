@@ -245,40 +245,7 @@ void Compare(){
     h1St_names.push_back("4eEventLevel/Smearing/hEv_HReco_M");
     h1St_names.push_back("4eEventLevel/Smearing/hEv_HReco_M_S");
 
-    for(Int_t k = 0; k < h1St_names.size(); k++){
-
-        h1 = (TH1D*) f1 -> Get(h1St_names[k]);
-        h2 = (TH1D*) f2 -> Get(h1St_names[k]);
-        h3 = (TH1D*) f3 -> Get(h1St_names[k]);
-
-        h1 -> SetFillColor(38);
-        h2 -> SetFillColor(2);
-        h3 -> SetFillColor(46);
-
-        h1 -> SetLineColor(38);
-        h2 -> SetLineColor(2);
-        h3 -> SetLineColor(46);
-        
-        THStack *hstk = new THStack("hstk","");
-        hstk -> Add(h2);
-        hstk -> Add(h3);
-        hstk -> Add(h1);
-        hstk -> Draw("HIST");
-
-        legend = new TLegend(0.1,0.7,0.35,0.9);
-        legend->SetHeader("Histogram Markers","C"); // option "C" allows to center the header
-        legend->AddEntry(h1, "Signal");
-        legend->AddEntry(h2, "ZZ Background");
-        legend->AddEntry(h3, "Z Background");
-        legend-> Draw("same"); 
-
-        hstk -> SetTitle("Stacked Histogram of Mass Distribution of H, ZZ*, and Z/Z*"); //sets title of the histogram ur gonna print
-        hstk ->GetXaxis()->SetTitle("M_{4l} (GeV)");  //sets x axis title
-        hstk ->GetYaxis()->SetTitle("Events"); //sets y axis title
-        TString titlestack = Form("%d",k);
-        c1 -> Write("stacktest" + titlestack);
-
-    }
+    
 
 
     
@@ -338,6 +305,8 @@ void Compare(){
     h1S_names.push_back("4eEventLevel/Smearing/hEv_HReco_M");
 
     for(Int_t k = 0; k < h1S_names.size(); k++){
+        h1->Reset();
+        h2->Reset();
         h1 = (TH1D*) f1 -> Get(h1S_names[k]);
         h2 = (TH1D*) f1 -> Get(h1S_names[k] + "_S");
         histmax = h1 -> GetMaximum();
@@ -361,6 +330,41 @@ void Compare(){
         legend->AddEntry(h2, "Smearing");
         legend-> Draw("same"); 
         c1 -> Write(h1S_names[k]);
+    }
+
+    for(Int_t k = 0; k < h1St_names.size(); k++){
+
+        h1 = (TH1D*) f1 -> Get(h1St_names[k]);
+        h2 = (TH1D*) f2 -> Get(h1St_names[k]);
+        h3 = (TH1D*) f3 -> Get(h1St_names[k]);
+
+        h1 -> SetFillColor(38);
+        h2 -> SetFillColor(2);
+        h3 -> SetFillColor(46);
+
+        h1 -> SetLineColor(38);
+        h2 -> SetLineColor(2);
+        h3 -> SetLineColor(46);
+        
+        THStack *hstk = new THStack("hstk","");
+        hstk -> Add(h2);
+        hstk -> Add(h3);
+        hstk -> Add(h1);
+        hstk -> Draw("HIST");
+
+        legend = new TLegend(0.1,0.7,0.35,0.9);
+        legend->SetHeader("Histogram Markers","C"); // option "C" allows to center the header
+        legend->AddEntry(h1, "Signal");
+        legend->AddEntry(h2, "ZZ Background");
+        legend->AddEntry(h3, "Z Background");
+        legend-> Draw("same"); 
+
+        hstk -> SetTitle("Stacked Histogram of Mass Distribution of H, ZZ*, and Z/Z*"); //sets title of the histogram ur gonna print
+        hstk ->GetXaxis()->SetTitle("M_{4l} (GeV)");  //sets x axis title
+        hstk ->GetYaxis()->SetTitle("Events"); //sets y axis title
+        TString titlestack = Form("%d",k);
+        c1 -> Write("stacktest" + titlestack);
+
     }
 
     OutputFile -> Close();

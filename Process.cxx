@@ -3,8 +3,8 @@
 
 bool Debug = false;
 bool suppress4e = false;
-bool suppress4mu = true;
-bool suppress2e2mu = true;
+bool suppress4mu = false;
+bool suppress2e2mu = false;
 
 bool LepPass(GenParticle* lep_b, double ptsmear = 0){
     //Checks if the electron can be seen by the detector or not
@@ -664,9 +664,12 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 is4e = false;
                 mucount++;
 
-                ePt_deteff.push_back(gRandom -> Gaus(75, 1));
+                temppts = ptSmear(gRandom, lep);
+                tempEs = ESmear(gRandom, lep);
+
+                ePt_deteff.push_back(temppts);
                 ePt_noeff.push_back(lep -> PT);
-                eE_deteff.push_back(gRandom -> Gaus(75, 1));
+                eE_deteff.push_back(tempEs);
                 eE_noeff.push_back(lep->E);
                 
             }
@@ -745,8 +748,19 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                         
                         e_par_list.push_back(lep_e);
 
-                        Vec_Lepton_e_S.SetPtEtaPhiE(lep_e -> PT  + ePt_deteff.at(lepint_temp) ,lep_e->Eta,lep_e->Phi, lep_e->E + eE_deteff.at(lepint_temp)); //change this for smearing
+                        //Vec_Lepton_e_S.SetPtEtaPhiE(lep_e -> PT  + ePt_deteff.at(lepint_temp) ,lep_e->Eta,lep_e->Phi, lep_e->E + eE_deteff.at(lepint_temp)); //change this for smearing (ORIGINAL)
+                        
 
+                        
+                        if(abs(lep_e->PID) == 11){
+                            Vec_Lepton_e_S.SetPxPyPzE(lep_e -> Px + eE_deteff.at(lepint_temp), lep_e -> Py + eE_deteff.at(lepint_temp), lep_e -> Pz + eE_deteff.at(lepint_temp), lep_e -> E + eE_deteff.at(lepint_temp)); //change this for smearing (NEW)
+                        }
+
+                        if(abs(lep_e->PID) == 13){
+                            Vec_Lepton_e_S.SetPxPyPzE(lep_e -> Px + ePt_deteff.at(lepint_temp), lep_e -> Py + ePt_deteff.at(lepint_temp), lep_e -> Pz + ePt_deteff.at(lepint_temp), lep_e -> E + ePt_deteff.at(lepint_temp)); //change this for smearing (NEW)
+                        }
+
+                        
                         Missing_Particle = Missing_Particle - Vec_Lepton_e;
                         FourLepton_Vector = FourLepton_Vector + Vec_Lepton_e;
                         FourLepton_Vector_S = FourLepton_Vector_S + Vec_Lepton_e_S;
