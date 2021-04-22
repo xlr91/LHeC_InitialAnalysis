@@ -1,0 +1,56 @@
+{
+//========= Macro generated from object: data/
+//========= by ROOT version6.18/04
+   
+   TH1D *data__1 = new TH1D("data__1","",20,0,100);
+   data__1->SetBinContent(1,45);
+   data__1->SetBinContent(2,51);
+   data__1->SetBinContent(3,51);
+   data__1->SetBinContent(4,51);
+   data__1->SetBinContent(5,54);
+   data__1->SetBinContent(6,54);
+   data__1->SetBinContent(7,47);
+   data__1->SetBinContent(8,58);
+   data__1->SetBinContent(9,52);
+   data__1->SetBinContent(10,44);
+   data__1->SetBinContent(11,65);
+   data__1->SetBinContent(12,185);
+   data__1->SetBinContent(13,397);
+   data__1->SetBinContent(14,361);
+   data__1->SetBinContent(15,191);
+   data__1->SetBinContent(16,86);
+   data__1->SetBinContent(17,60);
+   data__1->SetBinContent(18,48);
+   data__1->SetBinContent(19,54);
+   data__1->SetBinContent(20,46);
+   data__1->SetEntries(2000);
+   
+   TF1 *myfunc1 = new TF1("myfunc","[0] / sqrt(2.0 * TMath::Pi()) / [2] * exp(-(x-[1])*(x-[1])/2./[2]/[2]) + [3]",0,100, TF1::EAddToList::kNo);
+   myfunc1->SetFillStyle(0);
+   myfunc1->SetLineColor(2);
+   myfunc1->SetLineWidth(2);
+   myfunc1->SetChisquare(1378.93);
+   myfunc1->SetNDF(16);
+   myfunc1->GetXaxis()->SetTitleOffset(1);
+   myfunc1->GetYaxis()->SetTitleOffset(1);
+   myfunc1->SetParameter(0,700);
+   myfunc1->SetParError(0,2.95564);
+   myfunc1->SetParLimits(0,100,700);
+   myfunc1->SetParameter(1,65.0269);
+   myfunc1->SetParError(1,1.45328);
+   myfunc1->SetParLimits(1,50,90);
+   myfunc1->SetParameter(2,4.98067);
+   myfunc1->SetParError(2,1.1227);
+   myfunc1->SetParLimits(2,0.1,10);
+   myfunc1->SetParameter(3,10);
+   myfunc1->SetParError(3,0.0306728);
+   myfunc1->SetParLimits(3,0,10);
+   myfunc1->SetParent(data__1);
+   data__1->GetListOfFunctions()->Add(myfunc1);
+   data__1->GetXaxis()->SetTitle("x");
+   data__1->GetXaxis()->SetTitleOffset(1);
+   data__1->GetYaxis()->SetTitle("N");
+   data__1->GetYaxis()->SetTitleOffset(1);
+   data__1->GetZaxis()->SetTitleOffset(1);
+   data__1->Draw("");
+}

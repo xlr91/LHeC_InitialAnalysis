@@ -365,6 +365,27 @@ void Compare(){
         TString titlestack = Form("%d",k);
         c1 -> Write("stacktest" + titlestack);
 
+
+        TAxis *xaxisstk = hstk->GetXaxis();
+        Int_t binxstklow = xaxisstk->FindBin(100);
+        Int_t binxstkhigh = xaxisstk->FindBin(150);
+        Int_t binxstk = xaxisstk->FindBin(125);
+        TH1 *last = (TH1*)hstk->GetStack()->Last(); 
+
+        Int_t lengthstack = hstk->GetStack()->GetLast();
+        
+
+    
+
+
+        
+        //std::cout<< lengthstack << std::endl;
+        std::cout << last->Integral(binxstklow, binxstkhigh) << std::endl;
+        std::cout << h1->Integral(binxstklow, binxstkhigh) << std::endl;
+        std::cout << h2->Integral(binxstklow, binxstkhigh) << std::endl;
+        std::cout << h3->Integral(binxstklow, binxstkhigh) << std::endl;
+        std::cout << " " << std::endl;
+        
     }
 
     OutputFile -> Close();
