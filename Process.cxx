@@ -1,11 +1,11 @@
 #include "Process.h"
 
 
-bool Debug = true;
+bool Debug = false;
 bool suppress4e = false;
 bool suppress4mu = false;
 bool suppress2e2mu = false;
-//bool suppress2mu2e = false;
+bool suppress2mu2e = false;
 
 bool LepPass(GenParticle* lep_b, double ptsmear = 0){
     //Checks if the electron can be seen by the detector or not
@@ -65,11 +65,11 @@ std::vector<double> Hadron_Reco(TLorentzVector had){
 }
 
 
-std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
+std::tuple<std::vector<TLorentzVector>,int> ZZ_Reco(std::vector<GenParticle*> e_list){
     //returns a list of TLORENTZVECOTR which is [Z, Z*]
     int neg = 0;
     int pos = 2;
-    int ind;
+    int ind, PIDLead;
 
     double Zmass = 91.1876;
 
@@ -124,7 +124,7 @@ std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
             Ztrymass.push_back(Ztry[o].M());
         } else Ztrymass.push_back(0);
         
-        if(Debug) std::cout << leptry.at(o) << std::endl;
+        //if(Debug) std::cout << leptry.at(o) << std::endl;
     }
 
     double curr = 0;
@@ -144,27 +144,31 @@ std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
         case 0:
             ans.push_back(Ztry[0]);
             ans.push_back(Ztry[1]);
-            if(Debug) std::cout  << "PID Pair " << e_list_sorted.at(0) -> PID << " " << e_list_sorted.at(2) -> PID  << std::endl;
+            
+            PIDLead = abs(e_list_sorted.at(0) -> PID);
             break;
         case 1:
             ans.push_back(Ztry[1]);
             ans.push_back(Ztry[0]);
-            if(Debug) std::cout  << "PID Pair " << e_list_sorted.at(1) -> PID << " " << e_list_sorted.at(3) -> PID << std::endl;
+            
+            PIDLead = abs(e_list_sorted.at(1) -> PID);
             break;
         case 2:
             ans.push_back(Ztry[2]);
             ans.push_back(Ztry[3]);
-            if(Debug) std::cout  << "PID Pair " << e_list_sorted.at(0) -> PID << " " << e_list_sorted.at(3) -> PID  << std::endl;
+            
+            PIDLead = abs(e_list_sorted.at(0) -> PID);
             break;
         case 3:
             ans.push_back(Ztry[3]);
             ans.push_back(Ztry[2]);
-            if(Debug) std::cout  << "PID Pair " << e_list_sorted.at(1) -> PID << " " << e_list_sorted.at(2) -> PID << std::endl;
+            
+            PIDLead = abs(e_list_sorted.at(1) -> PID);
             break;
     }
 
 
-    return ans;
+    return std::make_tuple(ans, PIDLead);
 }
 
 
@@ -225,7 +229,7 @@ int main(int argc, char* argv[]) {
     OutputFile->mkdir("4eEventLevel/Smearing");
 
     //Example histograms
-    hEx_EventCount = new TH1D("hEx_EventCount","Event Classifications ; Event type; Number of Events",5,0,5);
+    hEx_EventCount = new TH1D("hEx_EventCount","Event Classifications ; Event type; Number of Events",6,0,6);
     hEx_WeightCount = new TH1D("hEx_WeightCount","",10,0,1);
 
     hEx_Lepton_Pt = new TH1D("hEx_Lepton_Pt","Charged Lepton Events vs pT; Charged Lepton p_{T} [GeV]; Number of Particles / 5 GeV",200,0.0,1000.0);
@@ -334,6 +338,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Events seen thats 4e    : " << hEx_EventCount->GetBinContent(3) << std::endl;
     std::cout << "Events seen thats 4mu   : " << hEx_EventCount->GetBinContent(4) << std::endl;
     std::cout << "Events seen thats 2e2mu : " << hEx_EventCount->GetBinContent(5) << std::endl;
+    std::cout << "Events seen thats 2mu2e : " << hEx_EventCount->GetBinContent(6) << std::endl;
     std::cout << "Write to file..." << std::endl;
 
     OutputFile->cd("Example");
@@ -344,6 +349,7 @@ int main(int argc, char* argv[]) {
     xAxis -> SetBinLabel(3, "Total Observed 4e Events");
     xAxis -> SetBinLabel(4, "Total Observed 4mu Events");
     xAxis -> SetBinLabel(5, "Total Observed 2e2mu Events");
+    xAxis -> SetBinLabel(6, "Total Observed 2mu2e Events");
 
     std::cout << "Write Test 0.1" << std::endl;
 
@@ -501,8 +507,8 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
     Long64_t numberOfEntries = treeReader->GetEntries();
     if (Debug) numberOfEntries = 1000;
 
-    bool is4e, is4mu, is2e2mu, good4e, good4mu, good2e2mu; //is the event a 4e event?
-    bool isall4eseen, isall4museen, isall2e2museen; //can all electrons in the event be seen?
+    bool is4e, is4mu, is2e2mu, is2mu2e, good4e, good4mu, good2e2mu, good2mu2e; //is the event a 4e event?
+    bool isall4eseen, isall4museen, isall2e2museen, isall2mu2eseen; //can all electrons in the event be seen?
     bool goodjet; //is this jet a good jet? (Does its mass *not* correspond to a lepton)
 
     int nSelected = 0;
@@ -554,12 +560,15 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         is4e = true;
         is4mu = true;
         is2e2mu = false;
+        is2mu2e = false;
         isall4eseen = true;
         isall4museen = true;
         isall2e2museen = true;
+        isall2mu2eseen = true;
         good4e = false;
         good4mu = false;
         good2e2mu = false;
+        good2mu2e = false;
         ecount = 0;
         mucount = 0;
         TLorentzVector Vec_Lepton_f;
@@ -674,7 +683,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 aPr_e_Et -> FillWeighted(LepPass(lep, temppts), Event_Weight, TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)));
 
                 //check if all 4e events seen 
-                if(!LepPass(lep, temppts)){ isall4eseen = false; isall2e2museen = false;}
+                if(!LepPass(lep, temppts)){ isall4eseen = false; isall2e2museen = false; isall2mu2eseen = false;}
                 is4mu = false;  
                 ecount++;
 
@@ -691,7 +700,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
             //if it contains a muon, its definitely not a 4e event 
             if (abs(lep -> PID) == 13){
-                if(!LepPass(lep)) {isall4museen = false ;  isall2e2museen = false;}  
+                if(!LepPass(lep)) {isall4museen = false ;  isall2e2museen = false; isall2mu2eseen = false;}  
                 is4e = false;
                 mucount++;
 
@@ -706,25 +715,27 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
             }
         } // Lepton Loop
 
-        if(ecount == 2 && mucount == 2) is2e2mu = true;
+        if(ecount == 2 && mucount == 2) {is2e2mu = true; is2mu2e = true;}
         
         if(suppress4e) is4e = false;
         if(suppress4mu) is4mu = false;
         if(suppress2e2mu) is2e2mu = false;
+        if(suppress2mu2e) is2mu2e = false;
 
         
 
-        if (is4e || is4mu || is2e2mu){
+        if (is4e || is4mu || is2e2mu || is2mu2e){
             TLorentzVector Debug_MP;
             std::vector<GenParticle*> e_par_list;
             if (Debug) {
                 if(is4e) std::cout << "This is a 4e event. Seen: " << isall4eseen << std::endl;  
                 if(is4mu) std::cout << "This is a 4mu event. Seen: " << isall4museen << std::endl;  
-                if(is2e2mu) std::cout << "This is a 2e2mu event. Seen: " << isall2e2museen << std::endl;  
+                if(is2e2mu || is2mu2e) std::cout << "This could be a 2e2mu or 2mu2e event. Seen: " << isall2e2museen << std::endl;
+                
             }
             
 
-            if ((isall4eseen || isall4museen || isall2e2museen) && Missing_Particle.Eta() != 0) hEv_jet_eta -> Fill(Missing_Particle.Eta(), Event_Weight);
+            if ((isall4eseen || isall4museen || isall2e2museen || isall2mu2eseen) && Missing_Particle.Eta() != 0) hEv_jet_eta -> Fill(Missing_Particle.Eta(), Event_Weight);
             //into lepton for loop again, this time its only  4e events
             bool interestingjet = true;
             if(Missing_Particle.Eta() == 0) interestingjet = false;
@@ -743,7 +754,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 if( abs(lep_e->PID) == 12) {
                     hEv_nue_eta_nocuts -> Fill( lep_e-> Eta ,Event_Weight);
                     hEv_nue_Et_nocuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);
-                    if (isall4eseen || isall4museen || isall2e2museen){
+                    if (isall4eseen || isall4museen || isall2e2museen || isall2mu2eseen){
                         my_nu = lep_e;
                         //fill the electron neutrino comparison with missing energy
                         if(interestingjet) hEv_nue_eta_wicuts -> Fill( -(lep_e-> Eta) ,Event_Weight);
@@ -811,6 +822,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 isall4eseen = false;
                 isall4museen = false;
                 isall2e2museen = false;
+                isall2mu2eseen = false;
             } 
 
             int sanityp = 0;
@@ -829,18 +841,36 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 isall4eseen = false;
                 isall4museen = false;
                 isall2e2museen = false;
+                isall2mu2eseen = false;
             }
+            
             
             if(isall4eseen && is4e) good4e = true;
             if(isall4museen && is4mu) good4mu = true;
             if(isall2e2museen && is2e2mu) good2e2mu = true;
-            if(Debug) std::cout << good4e << good4mu << std::endl;
+            if(isall2mu2eseen && is2mu2e) good2mu2e = true;
+
+            if (good4e || good4mu || good2e2mu || good2mu2e){
+                if(abs(std::get<1>(ZZ_Reco(e_par_list))) == 13){
+                    is2e2mu = false;
+                    good2e2mu = false;
+                }
+                if(abs(std::get<1>(ZZ_Reco(e_par_list))) == 11){
+                    is2mu2e = false;
+                    good2mu2e = false;
+                }
+            }
+            if(isall2e2museen && is2e2mu) good2e2mu = true;
+            if(isall2mu2eseen && is2mu2e) good2mu2e = true;
+
+            if(Debug) std::cout << "event verdict: " << good4e << good4mu << good2e2mu << good2mu2e << std::endl;
 
 
-            if (good4e || good4mu || good2e2mu) {
+            if (good4e || good4mu || good2e2mu || good2mu2e) {
                 if(is4e)  hEx_EventCount -> Fill(2.5, Event_Weight);
                 if(is4mu) hEx_EventCount -> Fill(3.5, Event_Weight);
                 if(is2e2mu) hEx_EventCount -> Fill(4.5, Event_Weight);
+                if(is2mu2e) hEx_EventCount -> Fill(5.5, Event_Weight);
                 
                 TLorentzVector my_nu_vec;
                 
@@ -850,12 +880,16 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
                 if(is4e&&Debug) std::cout << "4e" << std::endl;
                 if(is4mu&&Debug) std::cout << "4mu" << std::endl;
+                if(is2mu2e&&Debug) std::cout << "2mu2e" << std::endl;
+                if(is2e2mu&&Debug) std::cout << "2e2mu" << std::endl;
 
                 TLorentzVector Hadronic_Vector = -Missing_Particle;
 
                 std::vector<double> E_Reco_Lst = Electron_Reco(my_nu_vec);
                 std::vector<double> H_Reco_Lst = Hadron_Reco(Hadronic_Vector);
-                std::vector<TLorentzVector> Z_Reco_Lst = ZZ_Reco(e_par_list);  
+                std::vector<TLorentzVector> Z_Reco_Lst = std::get<0>(ZZ_Reco(e_par_list)); 
+
+                
 
                 double sumEPz = my_nu_vec.E() - my_nu_vec.Pz() + ( Hadronic_Vector.E() - Hadronic_Vector.Pz());
                 
