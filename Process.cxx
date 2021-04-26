@@ -1,10 +1,11 @@
 #include "Process.h"
 
 
-bool Debug = false;
+bool Debug = true;
 bool suppress4e = false;
 bool suppress4mu = false;
 bool suppress2e2mu = false;
+//bool suppress2mu2e = false;
 
 bool LepPass(GenParticle* lep_b, double ptsmear = 0){
     //Checks if the electron can be seen by the detector or not
@@ -74,30 +75,56 @@ std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
 
     std::vector<TLorentzVector> e_vecs, Ztry, ans;
     std::vector<double> Ztrymass;
+    std::vector<GenParticle*> e_list_sorted;
+    std::vector<int> leptry;
     e_vecs.resize(e_list.size());
+    e_list_sorted.resize(e_list.size());
     TLorentzVector V_temp;
 
 
     for(int i = 0; i < e_list.size(); ++i){
-        if(e_list[i] -> Charge == -1){
+        if(e_list.at(i) -> Charge == -1){
             ind = neg;
             neg++;
         }
-        else if(e_list[i] -> Charge == 1){
+        else if(e_list.at(i) -> Charge == 1){
             ind = pos;
             pos++;
         }
         V_temp.SetPtEtaPhiM(e_list[i]->PT,e_list[i]->Eta,e_list[i]->Phi,e_list[i]->Mass);
         e_vecs.at(ind) = V_temp;
+        e_list_sorted.at(ind) = e_list.at(i);
     }
   
     Ztry.push_back(e_vecs[0] + e_vecs[2]);
+    if((abs(e_list_sorted.at(0) -> PID)) == (abs(e_list_sorted.at(2) -> PID))){
+        leptry.push_back(1);
+    } else leptry.push_back(0);
+
+
     Ztry.push_back(e_vecs[1] + e_vecs[3]);
+    if((abs(e_list_sorted.at(1) -> PID)) == (abs(e_list_sorted.at(3) -> PID))){
+        leptry.push_back(1);
+    } else leptry.push_back(0);
+
     Ztry.push_back(e_vecs[0] + e_vecs[3]);
+    if((abs(e_list_sorted.at(0) -> PID)) == (abs(e_list_sorted.at(3) -> PID))){
+        leptry.push_back(1);
+    } else leptry.push_back(0);
+
     Ztry.push_back(e_vecs[1] + e_vecs[2]);
+    if((abs(e_list_sorted.at(1) -> PID)) == (abs(e_list_sorted.at(2) -> PID))){
+        leptry.push_back(1);
+    } else leptry.push_back(0);
+    
 
     for(int o = 0; o < Ztry.size(); ++o){
-        Ztrymass.push_back(Ztry[o].M());
+        
+        if(leptry.at(o) == 1){
+            Ztrymass.push_back(Ztry[o].M());
+        } else Ztrymass.push_back(0);
+        
+        if(Debug) std::cout << leptry.at(o) << std::endl;
     }
 
     double curr = 0;
@@ -117,18 +144,22 @@ std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> e_list){
         case 0:
             ans.push_back(Ztry[0]);
             ans.push_back(Ztry[1]);
+            if(Debug) std::cout  << "PID Pair " << e_list_sorted.at(0) -> PID << " " << e_list_sorted.at(2) -> PID  << std::endl;
             break;
         case 1:
             ans.push_back(Ztry[1]);
             ans.push_back(Ztry[0]);
+            if(Debug) std::cout  << "PID Pair " << e_list_sorted.at(1) -> PID << " " << e_list_sorted.at(3) -> PID << std::endl;
             break;
         case 2:
             ans.push_back(Ztry[2]);
             ans.push_back(Ztry[3]);
+            if(Debug) std::cout  << "PID Pair " << e_list_sorted.at(0) -> PID << " " << e_list_sorted.at(3) -> PID  << std::endl;
             break;
         case 3:
             ans.push_back(Ztry[3]);
             ans.push_back(Ztry[2]);
+            if(Debug) std::cout  << "PID Pair " << e_list_sorted.at(1) -> PID << " " << e_list_sorted.at(2) -> PID << std::endl;
             break;
     }
 
@@ -500,7 +531,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
     //Make random number generator
     gRandom = new TRandom3();
-    gRandom -> SetSeed(0);
+    gRandom -> SetSeed(1);
     std::vector<double> ePt_deteff, ePt_noeff, eE_deteff, eE_noeff;
 
     double temppts, tempEs;
