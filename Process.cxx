@@ -184,11 +184,14 @@ double ptSmear(TRandom* gR, GenParticle* lep_s){
 double ESmear(TRandom* gR, GenParticle* lep_s){
     double res, a, b;
 
+    /*
     a = 15;
     b = 2;
-
     res = (lep_s -> E) * TMath::Sqrt( ((a * a) / (lep_s -> E)) + (b * b) ) * 1/100;
-    
+    */
+    a = 15/100;
+    b = 2/100;
+    res = (lep_s -> E) * TMath::Sqrt( ((a * a) / (lep_s -> E)) + (b * b) );
     return gR -> Gaus(0, res);
     
 }
@@ -293,6 +296,8 @@ int main(int argc, char* argv[]) {
     hEvR_recox_elec_hadr = new TH2D("hEvR_recox_elec_hadr","2D Histogram of Logx, Hadron vs Electron Method; log_{10} x Electron; log_{10} x Hadron", 50, -7, 0, 50, -7., 0.);
     hEvR_recoy_elec_hadr = new TH2D("hEvR_recoy_elec_hadr","2D Histogram of Logy, Hadron vs Electron Method; log_{10} y Electron; log_{10} y Hadron", 50, -3, 0, 50, -3., 0.);
     //hEvR_recoy_elec_hadr = new TH2D("hEvR_recoy_elec_hadr","2D Histogram of Logy, Hadron vs Electron Method; log_{10} y Electron; log_{10} y Hadron", 50, -0.3, 0.3, 50, -1.5, 0.);
+    hEvR_recoQ2_elec_hadr_fit = new TF1("hEvR_recoQ2_elec_hadr_fit", "[0]+[1]*x",0,6);
+    
 
 
     hEvR_ereco_Q2 = new TH1D("hEvR_ereco_Q2","Log Q2 values for Electron Reconstruction Method; log_{10} Q^{2}; Events", 50, 0, 6);
@@ -422,9 +427,30 @@ int main(int argc, char* argv[]) {
 
 
     OutputFile->cd("4eEventLevel/KinematicReco");
+    
+    std::cout << "Entries of Q2" << hEvR_recoQ2_elec_hadr -> GetEntries() << std::endl;
+    std::cout << "Correlation Factor of Q2: " << hEvR_recoQ2_elec_hadr -> GetCorrelationFactor() << std::endl;
+
+    hEvR_recoQ2_elec_hadr_fit->SetParameters(0.,1.);
+    hEvR_recoQ2_elec_hadr_fit->FixParameter(0, 0);
+    hEvR_recoQ2_elec_hadr_fit->SetLineColor(kRed);
+    hEvR_recoQ2_elec_hadr -> Fit(hEvR_recoQ2_elec_hadr_fit);
+    hEvR_recoQ2_elec_hadr_fit -> Draw();
+    hEvR_recoQ2_elec_hadr_fit -> Write();
+
+    
+    hEvR_recoQ2_elec_hadr -> Draw();
+    hEvR_recoQ2_elec_hadr_fit -> Draw("same");
     hEvR_recoQ2_elec_hadr -> Write();
+
+
+
+    
+
     hEvR_recox_elec_hadr -> Write();
+    std::cout << "Correlation Factor of x: " << hEvR_recox_elec_hadr -> GetCorrelationFactor() << std::endl;
     hEvR_recoy_elec_hadr -> Write();
+    std::cout << "Correlation Factor of y: " << hEvR_recoy_elec_hadr -> GetCorrelationFactor() << std::endl;
 
     hEvR_ereco_Q2 -> Write();
     hEvR_ereco_x -> Write();
@@ -952,6 +978,8 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 hEvR_recoQ2_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[0]), TMath::Log10(H_Reco_Lst[0]));
                 hEvR_recox_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[1]), TMath::Log10(H_Reco_Lst[1]));
                 hEvR_recoy_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[2]), TMath::Log10(H_Reco_Lst[2]));
+
+                
                 
                 hEvR_ereco_Q2 -> Fill(TMath::Log10(E_Reco_Lst[0]), Event_Weight);
                 hEvR_ereco_x -> Fill(TMath::Log10(E_Reco_Lst[1]), Event_Weight);

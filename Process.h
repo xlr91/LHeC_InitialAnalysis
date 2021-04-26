@@ -123,6 +123,8 @@ TH2D * hEvR_recoQ2_elec_hadr;
 TH2D * hEvR_recox_elec_hadr;
 TH2D * hEvR_recoy_elec_hadr;
 
+TF1 * hEvR_recoQ2_elec_hadr_fit;
+
 
 
 TH1D * hEvR_ereco_Q2;
