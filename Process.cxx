@@ -189,8 +189,11 @@ double ESmear(TRandom* gR, GenParticle* lep_s){
     b = 2;
     res = (lep_s -> E) * TMath::Sqrt( ((a * a) / (lep_s -> E)) + (b * b) ) * 1/100;
     */
-    a = 15/100;
-    b = 2/100;
+    
+    //a = 15/100;
+    //b = 2/100;
+    a = 20/100;
+    b = 0.14/100; 
     res = (lep_s -> E) * TMath::Sqrt( ((a * a) / (lep_s -> E)) + (b * b) );
     return gR -> Gaus(0, res);
     

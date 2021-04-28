@@ -1,5 +1,6 @@
 #include "TFile.h"
 #include "TTree.h"
+#include "TMath.h"
 #include <string>
 #include <vector>
 #include <fstream>
@@ -365,7 +366,12 @@ void Compare(){
         TString titlestack = Form("%d",k);
         c1 -> Write("stacktest" + titlestack);
 
+        
 
+
+
+
+        //Finding out number of events
         TAxis *xaxisstk = hstk->GetXaxis();
         Int_t binxstklow = xaxisstk->FindBin(100);
         Int_t binxstkhigh = xaxisstk->FindBin(150);
@@ -375,18 +381,48 @@ void Compare(){
         Int_t lengthstack = hstk->GetStack()->GetLast();
         
 
-    
-
+        //std::cout<< lengthstack << std::endl;
+        std::cout << last->Integral(binxstklow, binxstkhigh) << std::endl; //total
+        std::cout << h1->Integral(binxstklow, binxstkhigh) << std::endl; //higgs
+        std::cout << h2->Integral(binxstklow, binxstkhigh) << std::endl; //ZZ
+        std::cout << h3->Integral(binxstklow, binxstkhigh) << std::endl; //Z
+        std::cout << " " << std::endl;
 
         
-        //std::cout<< lengthstack << std::endl;
-        std::cout << last->Integral(binxstklow, binxstkhigh) << std::endl;
-        std::cout << h1->Integral(binxstklow, binxstkhigh) << std::endl;
-        std::cout << h2->Integral(binxstklow, binxstkhigh) << std::endl;
-        std::cout << h3->Integral(binxstklow, binxstkhigh) << std::endl;
-        std::cout << " " << std::endl;
+        //new thing needs to be in steps of 3
+        Int_t binstart = xaxisstk->FindBin(125);
+        Int_t binvarhigh, binvarlow;
+        float totalvar, higgsvar, zzvar, zvar; 
+
+        float testnumber;
+        
+        if(k ==1 ){        
+            for(Int_t k = 0; k <= 75; k = k + 3){
+                binvarhigh = xaxisstk->FindBin(125 + k);
+                binvarlow  = xaxisstk->FindBin(125 - k);
+                //i now have all the information i need
+                totalvar = last->Integral(binvarlow, binvarhigh); 
+                higgsvar = h1  ->Integral(binvarlow, binvarhigh);
+                zzvar    = h2  ->Integral(binvarlow, binvarhigh);
+                zvar     = h3  ->Integral(binvarlow, binvarhigh);
+
+                testnumber = TMath::Sqrt(totalvar +zzvar + zvar) / (totalvar - zzvar - zvar);//precision we can measure 
+                std::cout <<
+                    testnumber*100 << "%    " << 
+                    last->GetBinCenter(binvarlow) << " " << 
+                    last->GetBinCenter(binvarhigh) << " "<< std::endl;
+                
+            }
+
+            
+        }
         
     }
+
+    
+    
+    
+
 
     OutputFile -> Close();
 }
