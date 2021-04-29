@@ -54,148 +54,186 @@ void Compare(){
     h1_names.push_back("4eEventLevel/CutsAnalysis/hEvC_Logy");
 
 
-    //Combining Z, Z*, and m4l
-    h_h  = (TH1D*) f1 -> Get("4eEventLevel/hEv_HReco_M");
-    h_Z  = (TH1D*) f1 -> Get("4eEventLevel/hEv_ZReco_M");
-    h_Zs = (TH1D*) f1 -> Get("4eEventLevel/hEv_ZstarReco_M");
+    //Combining Z, Z*, and m4l for the signal
+        h_h  = (TH1D*) f1 -> Get("4eEventLevel/hEv_HReco_M");
+        h_Z  = (TH1D*) f1 -> Get("4eEventLevel/hEv_ZReco_M");
+        h_Zs = (TH1D*) f1 -> Get("4eEventLevel/hEv_ZstarReco_M");
+
+        histmax = h_h -> GetMaximum();
+        if(histmax < h_Z -> GetMaximum()) histmax = h_Z -> GetMaximum();
+        if(histmax < h_Zs -> GetMaximum()) histmax = h_Zs -> GetMaximum();
+
+        //note that here we're applying the formatting on the _first_ histogram we wanna stick on tcanvas
+        h_h -> SetAxisRange(0, histmax*1.1, "Y");
+        h_h -> SetTitle("Reconstruction of Higgs, Z, and Z* Bosons"); //sets title of the histogram ur gonna print
+        h_h ->GetXaxis()->SetTitle("Mass (GeV)");  //sets x axis title
+        h_h ->GetYaxis()->SetTitle("Number of Events"); //sets y axis title
+        h_h -> GetXaxis()->SetRangeUser(0, 200); //sets the visual range, like my old histogram goes from 0 to 150 but i wanna show till 130
+        h_h -> SetLineColor(kRed); //changes the bars of the histogram so its red
+        h_h -> SetStats(kFALSE); //removes the annoying 'mean median and entries' box thing
+        h_h -> Draw("hist E2"); //Draws the histogram using the option hist and E2
+        //The Draw command takes h_h with its applied options and sticks it into the TCanvas canvas
+
+        h_Z -> SetLineColor(kBlue); //this is my second histogram
+        h_Z -> Draw("hist same E2"); //NOTE THE 'SAME' BIT, draws the histogram on the same canvas
+
+        h_Zs->SetLineColor(kGreen); //third histogram
+        h_Zs -> Draw("same hist E2");
+
+        legend = new TLegend(0.1,0.7,0.35,0.9); // Initialize the TLegend object that you place within the TCanvas object
+        //numbers are (x1, y1, x2, y2), bottom left and top right corner (i think)
+        legend->SetHeader("Particles","C"); // option "C" allows to center the header. 'Particles' is the Title of the legend
+        legend->AddEntry(h_h, "Higgs"); //Adds the entry and the label
+        legend->AddEntry(h_Z,"Z Boson");
+        legend->AddEntry(h_Zs,"Z* Boson");
+        legend-> Draw("same");  //Draws on same histogram
+
+        c1 -> Write("ReconstructedMassSignal");
 
 
-    // YOU COULD HAVE MADE A VECTOR OF HISTOGRAMS SO YOU CAN REUSE YOUR CODE DARNIT
+    //my will to live to make neat code has expired, so imma copy paste the same code again
+    //its not good coding practice 
 
-    histmax = h_h -> GetMaximum();
-    if(histmax < h_Z -> GetMaximum()) histmax = h_Z -> GetMaximum();
-    if(histmax < h_Zs -> GetMaximum()) histmax = h_Zs -> GetMaximum();
+    //Combining Z, Z*, and m4l for the signal but smeared
+        h_h  = (TH1D*) f1 -> Get("4eEventLevel/Smearing/hEv_HReco_M_S");
+        h_Z  = (TH1D*) f1 -> Get("4eEventLevel/Smearing/hEv_ZReco_M_S");
+        h_Zs = (TH1D*) f1 -> Get("4eEventLevel/Smearing/hEv_ZstarReco_M_S");
 
-    //note that here we're applying the formatting on the _first_ histogram we wanna stick on tcanvas
-    h_h -> SetAxisRange(0, histmax*1.1, "Y");
-    h_h -> SetTitle("Reconstruction of Higgs, Z, and Z* Bosons"); //sets title of the histogram ur gonna print
-    h_h ->GetXaxis()->SetTitle("Mass (GeV)");  //sets x axis title
-    h_h ->GetYaxis()->SetTitle("Number of Events"); //sets y axis title
-    h_h -> GetXaxis()->SetRangeUser(0, 200); //sets the visual range, like my old histogram goes from 0 to 150 but i wanna show till 130
-    h_h -> SetLineColor(kRed); //changes the bars of the histogram so its red
-    h_h -> SetStats(kFALSE); //removes the annoying 'mean median and entries' box thing
-    h_h -> Draw("hist E2"); //Draws the histogram using the option hist and E2
-    //The Draw command takes h_h with its applied options and sticks it into the TCanvas canvas
+        histmax = h_h -> GetMaximum();
+        if(histmax < h_Z -> GetMaximum()) histmax = h_Z -> GetMaximum();
+        if(histmax < h_Zs -> GetMaximum()) histmax = h_Zs -> GetMaximum();
 
-    h_Z -> SetLineColor(kBlue); //this is my second histogram
-    h_Z -> Draw("hist same E2"); //NOTE THE 'SAME' BIT, draws the histogram on the same canvas
+        //note that here we're applying the formatting on the _first_ histogram we wanna stick on tcanvas
+        h_h -> SetAxisRange(0, histmax*1.1, "Y");
+        h_h -> SetTitle("Reconstruction of Higgs, Z, and Z* Bosons"); //sets title of the histogram ur gonna print
+        h_h ->GetXaxis()->SetTitle("Mass (GeV)");  //sets x axis title
+        h_h ->GetYaxis()->SetTitle("Number of Events"); //sets y axis title
+        h_h -> GetXaxis()->SetRangeUser(0, 200); //sets the visual range, like my old histogram goes from 0 to 150 but i wanna show till 130
+        h_h -> SetLineColor(kRed); //changes the bars of the histogram so its red
+        h_h -> SetStats(kFALSE); //removes the annoying 'mean median and entries' box thing
+        h_h -> Draw("hist E2"); //Draws the histogram using the option hist and E2
+        //The Draw command takes h_h with its applied options and sticks it into the TCanvas canvas
 
-    h_Zs->SetLineColor(kGreen); //third histogram
-    h_Zs -> Draw("same hist E2");
+        h_Z -> SetLineColor(kBlue); //this is my second histogram
+        h_Z -> Draw("hist same E2"); //NOTE THE 'SAME' BIT, draws the histogram on the same canvas
 
-    legend = new TLegend(0.1,0.7,0.35,0.9); // Initialize the TLegend object that you place within the TCanvas object
-    //numbers are (x1, y1, x2, y2), bottom left and top right corner (i think)
-    legend->SetHeader("Particles","C"); // option "C" allows to center the header. 'Particles' is the Title of the legend
-    legend->AddEntry(h_h, "Higgs"); //Adds the entry and the label
-    legend->AddEntry(h_Z,"Z Boson");
-    legend->AddEntry(h_Zs,"Z* Boson");
-    legend-> Draw("same");  //Draws on same histogram
+        h_Zs->SetLineColor(kGreen); //third histogram
+        h_Zs -> Draw("same hist E2");
 
-    c1 -> Write("ReconstructedMassSignal");
+        legend = new TLegend(0.1,0.7,0.35,0.9); // Initialize the TLegend object that you place within the TCanvas object
+        //numbers are (x1, y1, x2, y2), bottom left and top right corner (i think)
+        legend->SetHeader("Particles","C"); // option "C" allows to center the header. 'Particles' is the Title of the legend
+        legend->AddEntry(h_h, "Higgs"); //Adds the entry and the label
+        legend->AddEntry(h_Z,"Z Boson");
+        legend->AddEntry(h_Zs,"Z* Boson");
+        legend-> Draw("same");  //Draws on same histogram
 
-    h_h  = (TH1D*) f2 -> Get("4eEventLevel/hEv_HReco_M");
-    h_Z  = (TH1D*) f2 -> Get("4eEventLevel/hEv_ZReco_M");
-    h_Zs = (TH1D*) f2 -> Get("4eEventLevel/hEv_ZstarReco_M");
+        c1 -> Write("ReconstructedMassSignalSmeared");
 
-    histmax = h_h -> GetMaximum();
-    if(histmax < h_Z -> GetMaximum()) histmax = h_Z -> GetMaximum();
-    if(histmax < h_Zs -> GetMaximum()) histmax = h_Zs -> GetMaximum();
+    //This is the one for the ZZ and Z background
+        h_h  = (TH1D*) f2 -> Get("4eEventLevel/hEv_HReco_M");
+        h_Z  = (TH1D*) f2 -> Get("4eEventLevel/hEv_ZReco_M");
+        h_Zs = (TH1D*) f2 -> Get("4eEventLevel/hEv_ZstarReco_M");
 
-    //note that here we're applying the formatting on the _first_ histogram we wanna stick on tcanvas
-    h_h -> SetAxisRange(0, histmax*1.1, "Y");
-    h_h -> SetTitle("Reconstruction of Higgs, Z, and Z* Bosons"); //sets title of the histogram ur gonna print
-    h_h ->GetXaxis()->SetTitle("Mass (GeV)");  //sets x axis title
-    h_h ->GetYaxis()->SetTitle("Number of Events"); //sets y axis title
-    h_h -> GetXaxis()->SetRangeUser(0, 200); //sets the visual range, like my old histogram goes from 0 to 150 but i wanna show till 130
-    h_h -> SetLineColor(kRed); //changes the bars of the histogram so its red
-    h_h -> SetStats(kFALSE); //removes the annoying 'mean median and entries' box thing
-    h_h -> Draw("hist E2"); //Draws the histogram using the option hist and E2
-    //The Draw command takes h_h with its applied options and sticks it into the TCanvas canvas
+        histmax = h_h -> GetMaximum();
+        if(histmax < h_Z -> GetMaximum()) histmax = h_Z -> GetMaximum();
+        if(histmax < h_Zs -> GetMaximum()) histmax = h_Zs -> GetMaximum();
 
-    h_Z -> SetLineColor(kBlue); //this is my second histogram
-    h_Z -> Draw("hist same E2"); //NOTE THE 'SAME' BIT, draws the histogram on the same canvas
+        //note that here we're applying the formatting on the _first_ histogram we wanna stick on tcanvas
+        h_h -> SetAxisRange(0, histmax*1.1, "Y");
+        h_h -> SetTitle("Reconstruction of Higgs, Z, and Z* Bosons"); //sets title of the histogram ur gonna print
+        h_h ->GetXaxis()->SetTitle("Mass (GeV)");  //sets x axis title
+        h_h ->GetYaxis()->SetTitle("Number of Events"); //sets y axis title
+        h_h -> GetXaxis()->SetRangeUser(0, 200); //sets the visual range, like my old histogram goes from 0 to 150 but i wanna show till 130
+        h_h -> SetLineColor(kRed); //changes the bars of the histogram so its red
+        h_h -> SetStats(kFALSE); //removes the annoying 'mean median and entries' box thing
+        h_h -> Draw("hist E2"); //Draws the histogram using the option hist and E2
+        //The Draw command takes h_h with its applied options and sticks it into the TCanvas canvas
 
-    h_Zs->SetLineColor(kGreen); //third histogram
-    h_Zs -> Draw("same hist E2");
+        h_Z -> SetLineColor(kBlue); //this is my second histogram
+        h_Z -> Draw("hist same E2"); //NOTE THE 'SAME' BIT, draws the histogram on the same canvas
 
-    legend = new TLegend(0.1,0.8,0.25,0.9); // Initialize the TLegend object that you place within the TCanvas object
-    //numbers are (x1, y1, x2, y2), bottom left and top right corner (i think)
-    legend->SetHeader("Particles","C"); // option "C" allows to center the header. 'Particles' is the Title of the legend
-    legend->AddEntry(h_h, "Higgs"); //Adds the entry and the label
-    legend->AddEntry(h_Z,"Z Boson");
-    legend->AddEntry(h_Zs,"Z* Boson");
-    legend-> Draw("same");  //Draws on same histogram
+        h_Zs->SetLineColor(kGreen); //third histogram
+        h_Zs -> Draw("same hist E2");
 
-    c1 -> Write("ReconstructedMassBakgnd");
+        legend = new TLegend(0.1,0.8,0.25,0.9); // Initialize the TLegend object that you place within the TCanvas object
+        //numbers are (x1, y1, x2, y2), bottom left and top right corner (i think)
+        legend->SetHeader("Particles","C"); // option "C" allows to center the header. 'Particles' is the Title of the legend
+        legend->AddEntry(h_h, "Higgs"); //Adds the entry and the label
+        legend->AddEntry(h_Z,"Z Boson");
+        legend->AddEntry(h_Zs,"Z* Boson");
+        legend-> Draw("same");  //Draws on same histogram
 
-    h_h  = (TH1D*) f3 -> Get("4eEventLevel/hEv_HReco_M");
-    h_Z  = (TH1D*) f3 -> Get("4eEventLevel/hEv_ZReco_M");
-    h_Zs = (TH1D*) f3 -> Get("4eEventLevel/hEv_ZstarReco_M");
+        c1 -> Write("ReconstructedMassBakgnd");
 
-    histmax = h_h -> GetMaximum();
-    if(histmax < h_Z -> GetMaximum()) histmax = h_Z -> GetMaximum();
-    if(histmax < h_Zs -> GetMaximum()) histmax = h_Zs -> GetMaximum();
+        h_h  = (TH1D*) f3 -> Get("4eEventLevel/hEv_HReco_M");
+        h_Z  = (TH1D*) f3 -> Get("4eEventLevel/hEv_ZReco_M");
+        h_Zs = (TH1D*) f3 -> Get("4eEventLevel/hEv_ZstarReco_M");
 
-    //note that here we're applying the formatting on the _first_ histogram we wanna stick on tcanvas
-    h_h -> SetAxisRange(0, histmax*1.1, "Y");
-    h_h -> SetTitle("Reconstruction of Higgs, Z, and Z* Bosons"); //sets title of the histogram ur gonna print
-    h_h ->GetXaxis()->SetTitle("Mass (GeV)");  //sets x axis title
-    h_h ->GetYaxis()->SetTitle("Number of Events"); //sets y axis title
-    h_h -> GetXaxis()->SetRangeUser(0, 200); //sets the visual range, like my old histogram goes from 0 to 150 but i wanna show till 130
-    h_h -> SetLineColor(kRed); //changes the bars of the histogram so its red
-    h_h -> SetStats(kFALSE); //removes the annoying 'mean median and entries' box thing
-    h_h -> Draw("hist E2"); //Draws the histogram using the option hist and E2
-    //The Draw command takes h_h with its applied options and sticks it into the TCanvas canvas
+        histmax = h_h -> GetMaximum();
+        if(histmax < h_Z -> GetMaximum()) histmax = h_Z -> GetMaximum();
+        if(histmax < h_Zs -> GetMaximum()) histmax = h_Zs -> GetMaximum();
 
-    h_Z -> SetLineColor(kBlue); //this is my second histogram
-    h_Z -> Draw("hist same E2"); //NOTE THE 'SAME' BIT, draws the histogram on the same canvas
+        //note that here we're applying the formatting on the _first_ histogram we wanna stick on tcanvas
+        h_h -> SetAxisRange(0, histmax*1.1, "Y");
+        h_h -> SetTitle("Reconstruction of Higgs, Z, and Z* Bosons"); //sets title of the histogram ur gonna print
+        h_h ->GetXaxis()->SetTitle("Mass (GeV)");  //sets x axis title
+        h_h ->GetYaxis()->SetTitle("Number of Events"); //sets y axis title
+        h_h -> GetXaxis()->SetRangeUser(0, 200); //sets the visual range, like my old histogram goes from 0 to 150 but i wanna show till 130
+        h_h -> SetLineColor(kRed); //changes the bars of the histogram so its red
+        h_h -> SetStats(kFALSE); //removes the annoying 'mean median and entries' box thing
+        h_h -> Draw("hist E2"); //Draws the histogram using the option hist and E2
+        //The Draw command takes h_h with its applied options and sticks it into the TCanvas canvas
 
-    h_Zs->SetLineColor(kGreen); //third histogram
-    h_Zs -> Draw("same hist E2");
+        h_Z -> SetLineColor(kBlue); //this is my second histogram
+        h_Z -> Draw("hist same E2"); //NOTE THE 'SAME' BIT, draws the histogram on the same canvas
 
-    legend = new TLegend(0.1,0.8,0.25,0.9); // Initialize the TLegend object that you place within the TCanvas object
-    //numbers are (x1, y1, x2, y2), bottom left and top right corner (i think)
-    legend->SetHeader("Particles","C"); // option "C" allows to center the header. 'Particles' is the Title of the legend
-    legend->AddEntry(h_h, "Higgs"); //Adds the entry and the label
-    legend->AddEntry(h_Z,"Z Boson");
-    legend->AddEntry(h_Zs,"Z* Boson");
-    legend-> Draw("same");  //Draws on same histogram
+        h_Zs->SetLineColor(kGreen); //third histogram
+        h_Zs -> Draw("same hist E2");
 
-    c1 -> Write("ReconstructedMassBakgndZ");
+        legend = new TLegend(0.1,0.8,0.25,0.9); // Initialize the TLegend object that you place within the TCanvas object
+        //numbers are (x1, y1, x2, y2), bottom left and top right corner (i think)
+        legend->SetHeader("Particles","C"); // option "C" allows to center the header. 'Particles' is the Title of the legend
+        legend->AddEntry(h_h, "Higgs"); //Adds the entry and the label
+        legend->AddEntry(h_Z,"Z Boson");
+        legend->AddEntry(h_Zs,"Z* Boson");
+        legend-> Draw("same");  //Draws on same histogram
 
- 
-    h_h  = (TH1D*) f1 -> Get("4eEventLevel/hEv_H_eta");
-    h_Z  = (TH1D*) f1 -> Get("4eEventLevel/hEv_jet_eta");
-    h_Zs = (TH1D*) f1 -> Get("4eEventLevel/hEv_nue_eta_wicuts");
+        c1 -> Write("ReconstructedMassBakgndZ");
 
-    histmax = h_h -> GetMaximum();
-    if(histmax < h_Z -> GetMaximum()) histmax = h_Z -> GetMaximum();
-    if(histmax < h_Zs -> GetMaximum()) histmax = h_Zs -> GetMaximum();
+    //this is the one for the Eta Plots background
+        h_h  = (TH1D*) f1 -> Get("4eEventLevel/hEv_H_eta");
+        h_Z  = (TH1D*) f1 -> Get("4eEventLevel/hEv_jet_eta");
+        h_Zs = (TH1D*) f1 -> Get("4eEventLevel/hEv_nue_eta_wicuts");
 
-    //note that here we're applying the formatting on the _first_ histogram we wanna stick on tcanvas
-    h_h -> SetAxisRange(0, histmax*1.1, "Y");
-    h_h -> SetTitle("Eta Distribution of Higgs, Scattered Quark (jet) and Scattered Lepton (neutrino)"); //sets title of the histogram ur gonna print
-    h_h ->GetXaxis()->SetTitle("Eta");  //sets x axis title
-    h_h ->GetYaxis()->SetTitle("Number of Events"); //sets y axis title
-    h_h -> SetLineColor(kRed); //changes the bars of the histogram so its red
-    h_h -> SetStats(kFALSE); //removes the annoying 'mean median and entries' box thing
-    h_h -> Draw("hist E2"); //Draws the histogram using the option hist and E2
+        histmax = h_h -> GetMaximum();
+        if(histmax < h_Z -> GetMaximum()) histmax = h_Z -> GetMaximum();
+        if(histmax < h_Zs -> GetMaximum()) histmax = h_Zs -> GetMaximum();
 
-    h_Z -> SetLineColor(kGreen); //this is my second histogram
-    h_Z -> Draw("hist same E2"); //NOTE THE 'SAME' BIT, draws the histogram on the same canvas
+        //note that here we're applying the formatting on the _first_ histogram we wanna stick on tcanvas
+        h_h -> SetAxisRange(0, histmax*1.1, "Y");
+        h_h -> SetTitle("Eta Distribution of Higgs, Scattered Quark (jet) and Scattered Lepton (neutrino)"); //sets title of the histogram ur gonna print
+        h_h ->GetXaxis()->SetTitle("Eta");  //sets x axis title
+        h_h ->GetYaxis()->SetTitle("Number of Events"); //sets y axis title
+        h_h -> SetLineColor(kRed); //changes the bars of the histogram so its red
+        h_h -> SetStats(kFALSE); //removes the annoying 'mean median and entries' box thing
+        h_h -> Draw("hist E2"); //Draws the histogram using the option hist and E2
 
-    h_Zs->SetLineColor(kBlue); //third histogram
-    h_Zs -> Draw("same hist E2");
+        h_Z -> SetLineColor(kGreen); //this is my second histogram
+        h_Z -> Draw("hist same E2"); //NOTE THE 'SAME' BIT, draws the histogram on the same canvas
 
-    legend = new TLegend(0.1,0.7,0.35,0.9); // Initialize the TLegend object that you place within the TCanvas object
-    //numbers are (x1, y1, x2, y2), bottom left and top right corner (i think)
-    legend->SetHeader("Particles","C"); // option "C" allows to center the header. 'Particles' is the Title of the legend
-    legend->AddEntry(h_h, "Higgs"); //Adds the entry and the label
-    legend->AddEntry(h_Z,"Jet");
-    legend->AddEntry(h_Zs,"Neutrino");
-    legend-> Draw("same");  //Draws on same histogram
+        h_Zs->SetLineColor(kBlue); //third histogram
+        h_Zs -> Draw("same hist E2");
 
-    c1 -> Write("EtaPlot");
+        legend = new TLegend(0.1,0.7,0.35,0.9); // Initialize the TLegend object that you place within the TCanvas object
+        //numbers are (x1, y1, x2, y2), bottom left and top right corner (i think)
+        legend->SetHeader("Particles","C"); // option "C" allows to center the header. 'Particles' is the Title of the legend
+        legend->AddEntry(h_h, "Higgs"); //Adds the entry and the label
+        legend->AddEntry(h_Z,"Jet");
+        legend->AddEntry(h_Zs,"Neutrino");
+        legend-> Draw("same");  //Draws on same histogram
+
+        c1 -> Write("EtaPlot");
 
     //TH1 loop
     for(Int_t k = 0; k < h1_names.size() ; k++){
@@ -402,8 +440,10 @@ void Compare(){
 
         float testnumber;
         
-        if(k ==1 ){        
-            for(Int_t k = 0; k <= 75; k = k + 3){
+        if(k ==1 ){      
+            TH1D * h_MassWindowOpt;
+            h_MassWindowOpt = new TH1D("h_MassWindowOpt","MassWindow;;", 76, 0, 76);
+            for(Int_t k = 0; k <= 75; k = k + 1){
                 binvarhigh = xaxisstk->FindBin(125 + k);
                 binvarlow  = xaxisstk->FindBin(125 - k);
                 //i now have all the information i need
@@ -417,10 +457,11 @@ void Compare(){
                     testnumber*100 << "%    " << 
                     last->GetBinCenter(binvarlow) << " " << 
                     last->GetBinCenter(binvarhigh) << " "<< std::endl;
-                
+               
+                h_MassWindowOpt-> SetBinContent (k, testnumber);
             }
-
-            
+            h_MassWindowOpt -> Draw();
+            c1-> Write("MassWindow");
         }
         
     }
