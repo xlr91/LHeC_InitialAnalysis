@@ -65,19 +65,20 @@ std::vector<double> Hadron_Reco(TLorentzVector had){
 }
 
 
-std::tuple<std::vector<TLorentzVector>,int> ZZ_Reco(std::vector<GenParticle*> e_list){
+std::tuple<std::vector<TLorentzVector>,int, std::vector<TLorentzVector>,int> ZZ_Reco(std::vector<GenParticle*> e_list, std::vector<TLorentzVector> e_vec_smear){
     //returns a list of TLORENTZVECOTR which is [Z, Z*]
     int neg = 0;
     int pos = 2;
-    int ind, PIDLead;
+    int ind, PIDLead, PIDLead_s;
 
     double Zmass = 91.1876;
 
-    std::vector<TLorentzVector> e_vecs, Ztry, ans;
-    std::vector<double> Ztrymass;
+    std::vector<TLorentzVector> e_vecs, e_vecs_s, Ztry, Ztry_s, ans, ans_s;
+    std::vector<double> Ztrymass, Ztrymass_s;
     std::vector<GenParticle*> e_list_sorted;
     std::vector<int> leptry;
-    e_vecs.resize(e_list.size());
+    e_vecs.resize(e_list.size()); //truth vectors
+    e_vecs_s.resize(e_list.size()); //smeared vectors
     e_list_sorted.resize(e_list.size());
     TLorentzVector V_temp;
 
@@ -93,26 +94,31 @@ std::tuple<std::vector<TLorentzVector>,int> ZZ_Reco(std::vector<GenParticle*> e_
         }
         V_temp.SetPtEtaPhiM(e_list[i]->PT,e_list[i]->Eta,e_list[i]->Phi,e_list[i]->Mass);
         e_vecs.at(ind) = V_temp;
+        e_vecs_s.at(ind) = e_vec_smear.at(i);
         e_list_sorted.at(ind) = e_list.at(i);
     }
   
     Ztry.push_back(e_vecs[0] + e_vecs[2]);
+    Ztry_s.push_back(e_vecs_s[0] + e_vecs_s[2]);
     if((abs(e_list_sorted.at(0) -> PID)) == (abs(e_list_sorted.at(2) -> PID))){
         leptry.push_back(1);
     } else leptry.push_back(0);
 
 
     Ztry.push_back(e_vecs[1] + e_vecs[3]);
+    Ztry_s.push_back(e_vecs_s[1] + e_vecs_s[3]);
     if((abs(e_list_sorted.at(1) -> PID)) == (abs(e_list_sorted.at(3) -> PID))){
         leptry.push_back(1);
     } else leptry.push_back(0);
 
     Ztry.push_back(e_vecs[0] + e_vecs[3]);
+    Ztry_s.push_back(e_vecs_s[0] + e_vecs_s[3]);
     if((abs(e_list_sorted.at(0) -> PID)) == (abs(e_list_sorted.at(3) -> PID))){
         leptry.push_back(1);
     } else leptry.push_back(0);
 
     Ztry.push_back(e_vecs[1] + e_vecs[2]);
+    Ztry_s.push_back(e_vecs_s[1] + e_vecs_s[2]);
     if((abs(e_list_sorted.at(1) -> PID)) == (abs(e_list_sorted.at(2) -> PID))){
         leptry.push_back(1);
     } else leptry.push_back(0);
@@ -122,20 +128,33 @@ std::tuple<std::vector<TLorentzVector>,int> ZZ_Reco(std::vector<GenParticle*> e_
         
         if(leptry.at(o) == 1){
             Ztrymass.push_back(Ztry[o].M());
-        } else Ztrymass.push_back(0);
+            Ztrymass_s.push_back(Ztry_s[o].M());
+
+        } else {
+            Ztrymass.push_back(0);
+            Ztrymass_s.push_back(0);
+        }
         
         //if(Debug) std::cout << leptry.at(o) << std::endl;
     }
 
     double curr = 0;
     int currind = 0;
-    double val;
+    double curr_s = 0;
+    int currind_s = 0;
+    double val, val_s;
 
     for(int k = 0; k < Ztrymass.size(); ++k){
         val = Ztrymass[k];
         if(abs(Zmass - val) < abs(Zmass - curr)){
             curr = val;
             currind = k;
+        }
+
+        val_s = Ztrymass_s[k];
+        if(abs(Zmass - val_s) < abs(Zmass - curr_s)){
+            curr_s = val_s;
+            currind_s = k;
         }
     }
 
@@ -167,8 +186,35 @@ std::tuple<std::vector<TLorentzVector>,int> ZZ_Reco(std::vector<GenParticle*> e_
             break;
     }
 
+    switch (currind_s){
+        case 0:
+            ans_s.push_back(Ztry_s[0]);
+            ans_s.push_back(Ztry_s[1]);
+            
+            PIDLead_s = abs(e_list_sorted.at(0) -> PID);
+            break;
+        case 1:
+            ans_s.push_back(Ztry_s[1]);
+            ans_s.push_back(Ztry_s[0]);
+            
+            PIDLead_s = abs(e_list_sorted.at(1) -> PID);
+            break;
+        case 2:
+            ans_s.push_back(Ztry_s[2]);
+            ans_s.push_back(Ztry_s[3]);
+            
+            PIDLead_s = abs(e_list_sorted.at(0) -> PID);
+            break;
+        case 3:
+            ans_s.push_back(Ztry_s[3]);
+            ans_s.push_back(Ztry_s[2]);
+            
+            PIDLead_s = abs(e_list_sorted.at(1) -> PID);
+            break;
+    }
 
-    return std::make_tuple(ans, PIDLead);
+
+    return std::make_tuple(ans, PIDLead, ans_s, PIDLead_s);
 }
 
 
@@ -756,6 +802,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         if (is4e || is4mu || is2e2mu || is2mu2e){
             TLorentzVector Debug_MP;
             std::vector<GenParticle*> e_par_list;
+            std::vector<TLorentzVector> e_vec_list;
             if (Debug) {
                 if(is4e) std::cout << "This is a 4e event. Seen: " << isall4eseen << std::endl;  
                 if(is4mu) std::cout << "This is a 4mu event. Seen: " << isall4museen << std::endl;  
@@ -831,6 +878,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                             Vec_Lepton_e_S.SetPxPyPzE(lep_e -> Px + ePt_deteff.at(lepint_temp), lep_e -> Py + ePt_deteff.at(lepint_temp), lep_e -> Pz + ePt_deteff.at(lepint_temp), lep_e -> E + ePt_deteff.at(lepint_temp)); //change this for smearing (NEW)
                         }
 
+                        e_vec_list.push_back(Vec_Lepton_e_S);
                         
                         Missing_Particle = Missing_Particle - Vec_Lepton_e;
                         FourLepton_Vector = FourLepton_Vector + Vec_Lepton_e;
@@ -880,11 +928,12 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
             if(isall2mu2eseen && is2mu2e) good2mu2e = true;
 
             if (good4e || good4mu || good2e2mu || good2mu2e){
-                if(abs(std::get<1>(ZZ_Reco(e_par_list))) == 13){
+                //to change back to reconstruction with truth particles, change get<3> to <1>
+                if(abs(std::get<3>(ZZ_Reco(e_par_list, e_vec_list))) == 13){
                     is2e2mu = false;
                     good2e2mu = false;
                 }
-                if(abs(std::get<1>(ZZ_Reco(e_par_list))) == 11){
+                if(abs(std::get<3>(ZZ_Reco(e_par_list, e_vec_list))) == 11){
                     is2mu2e = false;
                     good2mu2e = false;
                 }
@@ -916,7 +965,11 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
                 std::vector<double> E_Reco_Lst = Electron_Reco(my_nu_vec);
                 std::vector<double> H_Reco_Lst = Hadron_Reco(Hadronic_Vector);
-                std::vector<TLorentzVector> Z_Reco_Lst = std::get<0>(ZZ_Reco(e_par_list)); 
+                std::vector<TLorentzVector> Z_Reco_Lst = std::get<0>(ZZ_Reco(e_par_list, e_vec_list)); 
+                std::vector<TLorentzVector> Z_Reco_Lst_S = std::get<2>(ZZ_Reco(e_par_list, e_vec_list)); 
+
+                if(Debug) std::cout << "PID Leader: " << std::get<1>(ZZ_Reco(e_par_list, e_vec_list)) << " " 
+                << std::get<3>(ZZ_Reco(e_par_list, e_vec_list)) << std::endl;
 
                 
 
@@ -967,8 +1020,10 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 hEv_HReco_M -> Fill(FourLepton_Vector.M(), Event_Weight); //not the hadronic vector 
                 hEv_HReco_M_S -> Fill(FourLepton_Vector_S.M(), Event_Weight); //not the hadronic vector 
                 hEv_ZReco_M -> Fill(Z_Reco_Lst[0].M(), Event_Weight);
+                hEv_ZReco_M_S -> Fill(Z_Reco_Lst_S[0].M(), Event_Weight);
                 hEv_ZCurr_M -> Fill(FourLepton_Vector.M(), Event_Weight);
                 hEv_ZstarReco_M -> Fill(Z_Reco_Lst[1].M(), Event_Weight);
+                hEv_ZstarReco_M_S-> Fill(Z_Reco_Lst_S[1].M(), Event_Weight);
 
                 hEv_ZZReco_M -> Fill(Z_Reco_Lst[0].M(), Event_Weight);
                 hEv_ZZReco_M -> Fill(Z_Reco_Lst[1].M(), Event_Weight);

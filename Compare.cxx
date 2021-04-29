@@ -59,6 +59,9 @@ void Compare(){
     h_Z  = (TH1D*) f1 -> Get("4eEventLevel/hEv_ZReco_M");
     h_Zs = (TH1D*) f1 -> Get("4eEventLevel/hEv_ZstarReco_M");
 
+
+    // YOU COULD HAVE MADE A VECTOR OF HISTOGRAMS SO YOU CAN REUSE YOUR CODE DARNIT
+
     histmax = h_h -> GetMaximum();
     if(histmax < h_Z -> GetMaximum()) histmax = h_Z -> GetMaximum();
     if(histmax < h_Zs -> GetMaximum()) histmax = h_Zs -> GetMaximum();
@@ -303,7 +306,10 @@ void Compare(){
     std::vector<TString> h1S_names;
     h1S_names.push_back("4eEventLevel/Smearing/hEvS_e_pt");
     h1S_names.push_back("4eEventLevel/Smearing/hEvS_e_E");
+    h1S_names.push_back("4eEventLevel/Smearing/hEv_ZReco_M");
+    h1S_names.push_back("4eEventLevel/Smearing/hEv_ZstarReco_M");
     h1S_names.push_back("4eEventLevel/Smearing/hEv_HReco_M");
+    
 
     for(Int_t k = 0; k < h1S_names.size(); k++){
         h1->Reset();

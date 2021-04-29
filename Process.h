@@ -178,7 +178,7 @@ std::vector<double> Electron_Reco(TLorentzVector scat);
 std::vector<double> Hadron_Reco(TLorentzVector had);
 
 //std::vector<TLorentzVector> ZZ_Reco(std::vector<GenParticle*> test);
-std::tuple<std::vector<TLorentzVector>,int> ZZ_Reco(std::vector<GenParticle*> test);
+std::tuple<std::vector<TLorentzVector>,int, std::vector<TLorentzVector>,int> ZZ_Reco(std::vector<GenParticle*> test, std::vector<TLorentzVector> e_vec_smear);
 
 double ptSmear(TRandom* gR, GenParticle* lep_s);
 double ESmear(TRandom* gR, GenParticle* lep_s);
