@@ -286,6 +286,7 @@ void Compare(){
     std::vector<TString> h1St_names;
     h1St_names.push_back("4eEventLevel/Smearing/hEv_HReco_M");
     h1St_names.push_back("4eEventLevel/Smearing/hEv_HReco_M_S");
+    //h1St_names.push_back("4eEventLevel/Smearing/hEv_HReco_M_S");
 
     
 
@@ -392,16 +393,33 @@ void Compare(){
         h3 -> SetLineColor(46);
         
         THStack *hstk = new THStack("hstk","");
+        TH1 *laststk;
+        
         hstk -> Add(h2);
         hstk -> Add(h3);
         hstk -> Add(h1);
+        
+
+
+        
         hstk -> Draw("HIST");
+        
+        laststk = (TH1*)hstk->GetStack()->Last(); 
+        laststk -> SetFillColor(1);
+        laststk -> SetLineColor(1);
+        laststk -> SetFillStyle(3001);
+        laststk -> Draw("SAME E2");
+            
+        
+
 
         legend = new TLegend(0.1,0.7,0.35,0.9);
         legend->SetHeader("Histogram Markers","C"); // option "C" allows to center the header
         legend->AddEntry(h1, "Signal");
         legend->AddEntry(h2, "ZZ Background");
         legend->AddEntry(h3, "Z Background");
+        legend -> AddEntry(laststk, "Uncertainty");
+        //legend->AddEntry(laststk, "TEST");
         legend-> Draw("same"); 
 
         hstk -> SetTitle("Stacked Histogram of Mass Distribution of H, ZZ*, and Z/Z*"); //sets title of the histogram ur gonna print
@@ -411,9 +429,6 @@ void Compare(){
         c1 -> Write("stacktest" + titlestack);
 
         
-
-
-
 
         //Finding out number of events
         TAxis *xaxisstk = hstk->GetXaxis();
@@ -442,8 +457,8 @@ void Compare(){
         
         if(k ==1 ){      
             TH1D * h_MassWindowOpt;
-            h_MassWindowOpt = new TH1D("h_MassWindowOpt","MassWindow;;", 76, 0, 76);
-            for(Int_t k = 0; k <= 75; k = k + 1){
+            h_MassWindowOpt = new TH1D("h_MassWindowOpt","MassWindow (125 ± x);x;Precision(%)", 76, 0, 76);
+            for(Int_t k = 0; k < 75; k = k + 1){
                 binvarhigh = xaxisstk->FindBin(125 + k);
                 binvarlow  = xaxisstk->FindBin(125 - k);
                 //i now have all the information i need
@@ -458,11 +473,14 @@ void Compare(){
                     last->GetBinCenter(binvarlow) << " " << 
                     last->GetBinCenter(binvarhigh) << " "<< std::endl;
                
-                h_MassWindowOpt-> SetBinContent (k, testnumber);
+                h_MassWindowOpt-> SetBinContent (k, testnumber*100);
             }
             h_MassWindowOpt -> Draw();
             c1-> Write("MassWindow");
         }
+        std::cout<< " " << std::endl;
+
+        
         
     }
 
