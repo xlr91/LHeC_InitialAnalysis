@@ -341,16 +341,17 @@ int main(int argc, char* argv[]) {
     hEv_jet_eta = new TH1D("hEv_jet_eta","Scattered quark  vs pseudorapidity; Jet #eta; Number of Particles", 50, -5.0, 5.0);
     hEv_H_eta = new TH1D("hEv_H_eta","Higgs vs pseudorapidity; Higgs #eta; Number of Particles", 50, -5.0, 5.0);
     
-    hEvR_recoQ2_elec_hadr = new TH2D("hEvR_recoQ2_elec_hadr","2D Histogram of LogQ2, Hadron vs Electron Method; log_{10} Q2 Electron; log_{10} Q2 Hadron", 50, 0, 6.0, 50, 0., 6.);
-    hEvR_recox_elec_hadr = new TH2D("hEvR_recox_elec_hadr","2D Histogram of Logx, Hadron vs Electron Method; log_{10} x Electron; log_{10} x Hadron", 50, -7, 0, 50, -7., 0.);
-    hEvR_recoy_elec_hadr = new TH2D("hEvR_recoy_elec_hadr","2D Histogram of Logy, Hadron vs Electron Method; log_{10} y Electron; log_{10} y Hadron", 50, -3, 0, 50, -3., 0.);
+    hEvR_recoQ2_elec_hadr = new TH2D("hEvR_recoQ2_elec_hadr","2D Histogram of log_{10} Q^{2}, Hadron vs Electron Method; log_{10} Q^{2} Electron; log_{10} Q^{2} Hadron", 50, 0, 6.0, 50, 0., 6.);
+    hEvR_recox_elec_hadr = new TH2D("hEvR_recox_elec_hadr","2D Histogram of log_{10} x, Hadron vs Electron Method; log_{10} x Electron; log_{10} x Hadron", 50, -7, 0, 50, -7., 0.);
+    hEvR_recoy_elec_hadr = new TH2D("hEvR_recoy_elec_hadr","2D Histogram of Log y, Hadron vs Electron Method; log_{10} y Electron; log_{10} y Hadron", 50, -3, 0, 50, -3., 0.);
     //hEvR_recoy_elec_hadr = new TH2D("hEvR_recoy_elec_hadr","2D Histogram of Logy, Hadron vs Electron Method; log_{10} y Electron; log_{10} y Hadron", 50, -0.3, 0.3, 50, -1.5, 0.);
     hEvR_recoQ2_elec_hadr_fit = new TF1("hEvR_recoQ2_elec_hadr_fit", "[0]+[1]*x",0,6);
+    hEvR_recox_elec_hadr_fit = new TF1("hEvR_recox_elec_hadr_fit", "[0]+[1]*x",-7,0);
     
 
 
-    hEvR_ereco_Q2 = new TH1D("hEvR_ereco_Q2","Log Q2 values for Electron Reconstruction Method; log_{10} Q^{2}; Events", 50, 0, 6);
-    hEvR_ereco_x = new TH1D("hEvR_ereco_x","Log x values for Electron Reconstruction Method; log_{10} x; Events", 50, -7, 0);
+    hEvR_ereco_Q2 = new TH1D("hEvR_ereco_Q2","log_{10} Q^{2} values for Electron Reconstruction Method; log_{10} Q^{2}; Events", 50, 0, 6);
+    hEvR_ereco_x = new TH1D("hEvR_ereco_x","log_{10} x values for Electron Reconstruction Method; log_{10} x; Events", 50, -7, 0);
     hEvR_ereco_y = new TH1D("hEvR_ereco_y","Log y values for Electron Reconstruction Method; log_{10} y; Events", 50, -3, 0);
     hEvR_ereco_y_true = new TH1D("hEvR_ereco_y_true","y values for Electron Reconstruction Method; y; Events", 50, -1, 2);
 
@@ -477,6 +478,7 @@ int main(int argc, char* argv[]) {
 
     OutputFile->cd("4eEventLevel/KinematicReco");
     
+
     std::cout << "Entries of Q2" << hEvR_recoQ2_elec_hadr -> GetEntries() << std::endl;
     std::cout << "Correlation Factor of Q2: " << hEvR_recoQ2_elec_hadr -> GetCorrelationFactor() << std::endl;
 
@@ -488,15 +490,31 @@ int main(int argc, char* argv[]) {
     hEvR_recoQ2_elec_hadr_fit -> Write();
 
     
+    hEvR_recoQ2_elec_hadr -> SetStats(0);
     hEvR_recoQ2_elec_hadr -> Draw();
     hEvR_recoQ2_elec_hadr_fit -> Draw("same");
     hEvR_recoQ2_elec_hadr -> Write();
+
+    
+
+    hEvR_recox_elec_hadr_fit->SetParameters(0.,1.);
+    hEvR_recox_elec_hadr_fit->FixParameter(0, 0);
+    hEvR_recox_elec_hadr_fit->SetLineColor(kRed);
+    hEvR_recox_elec_hadr -> Fit(hEvR_recox_elec_hadr_fit);
+    hEvR_recox_elec_hadr_fit -> Draw();
+    hEvR_recox_elec_hadr_fit -> Write();
+
+    hEvR_recox_elec_hadr -> SetStats(0);
+    hEvR_recox_elec_hadr -> Draw();
+    hEvR_recox_elec_hadr_fit -> Draw("same");
+    hEvR_recox_elec_hadr -> Write();
+    
 
 
 
     
 
-    hEvR_recox_elec_hadr -> Write();
+    
     std::cout << "Correlation Factor of x: " << hEvR_recox_elec_hadr -> GetCorrelationFactor() << std::endl;
     hEvR_recoy_elec_hadr -> Write();
     std::cout << "Correlation Factor of y: " << hEvR_recoy_elec_hadr -> GetCorrelationFactor() << std::endl;

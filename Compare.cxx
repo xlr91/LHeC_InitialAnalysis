@@ -65,8 +65,8 @@ void Compare(){
 
         //note that here we're applying the formatting on the _first_ histogram we wanna stick on tcanvas
         h_h -> SetAxisRange(0, histmax*1.1, "Y");
-        h_h -> SetTitle("Reconstruction of Higgs, Z, and Z* Bosons"); //sets title of the histogram ur gonna print
-        h_h ->GetXaxis()->SetTitle("Mass (GeV)");  //sets x axis title
+        h_h -> SetTitle("Mass Reconstruction of Higgs, Z, and Z* Bosons"); //sets title of the histogram ur gonna print
+        h_h ->GetXaxis()->SetTitle("Reconstructed Mass (GeV)");  //sets x axis title
         h_h ->GetYaxis()->SetTitle("Number of Events"); //sets y axis title
         h_h -> GetXaxis()->SetRangeUser(0, 200); //sets the visual range, like my old histogram goes from 0 to 150 but i wanna show till 130
         h_h -> SetLineColor(kRed); //changes the bars of the histogram so its red
@@ -105,8 +105,8 @@ void Compare(){
 
         //note that here we're applying the formatting on the _first_ histogram we wanna stick on tcanvas
         h_h -> SetAxisRange(0, histmax*1.1, "Y");
-        h_h -> SetTitle("Reconstruction of Higgs, Z, and Z* Bosons"); //sets title of the histogram ur gonna print
-        h_h ->GetXaxis()->SetTitle("Mass (GeV)");  //sets x axis title
+        h_h -> SetTitle("Mass Reconstruction of Higgs, Z, and Z* Bosons"); //sets title of the histogram ur gonna print
+        h_h ->GetXaxis()->SetTitle("Reconstructed Mass (GeV)");  //sets x axis title
         h_h ->GetYaxis()->SetTitle("Number of Events"); //sets y axis title
         h_h -> GetXaxis()->SetRangeUser(0, 200); //sets the visual range, like my old histogram goes from 0 to 150 but i wanna show till 130
         h_h -> SetLineColor(kRed); //changes the bars of the histogram so its red
@@ -416,13 +416,13 @@ void Compare(){
         legend = new TLegend(0.1,0.7,0.35,0.9);
         legend->SetHeader("Histogram Markers","C"); // option "C" allows to center the header
         legend->AddEntry(h1, "Signal");
-        legend->AddEntry(h2, "ZZ Background");
+        legend->AddEntry(h2, "ZZ* Background");
         legend->AddEntry(h3, "Z Background");
         legend -> AddEntry(laststk, "Uncertainty");
         //legend->AddEntry(laststk, "TEST");
         legend-> Draw("same"); 
 
-        hstk -> SetTitle("Stacked Histogram of Mass Distribution of H, ZZ*, and Z/Z*"); //sets title of the histogram ur gonna print
+        hstk -> SetTitle("Stacked Histogram of Mass Distribution of H, ZZ*, and Z"); //sets title of the histogram ur gonna print
         hstk ->GetXaxis()->SetTitle("M_{4l} (GeV)");  //sets x axis title
         hstk ->GetYaxis()->SetTitle("Events"); //sets y axis title
         TString titlestack = Form("%d",k);
@@ -457,7 +457,7 @@ void Compare(){
         
         if(k ==1 ){      
             TH1D * h_MassWindowOpt;
-            h_MassWindowOpt = new TH1D("h_MassWindowOpt","MassWindow (125 ± x);x;Precision(%)", 76, 0, 76);
+            h_MassWindowOpt = new TH1D("h_MassWindowOpt","Mass Window Optimisation 125 GeV #pm x ; x (GeV); Precision(%)", 74, 0, 74);
             for(Int_t k = 0; k < 75; k = k + 1){
                 binvarhigh = xaxisstk->FindBin(125 + k);
                 binvarlow  = xaxisstk->FindBin(125 - k);
