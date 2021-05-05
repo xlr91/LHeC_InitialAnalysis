@@ -370,8 +370,8 @@ int main(int argc, char* argv[]) {
     hEvS_e_pt = new TH1D("hEvS_e_pt","Electron particles vs transverse momentum; Electron p_{T} ; Number of Particles", 50, 0, 150);
     hEvS_e_pt_S = new TH1D("hEvS_e_pt_S","Electron smeared particles vs transverse energy; Electron p_{T} ; Number of Particles", 50, 0, 150);
 
-    hEvS_e_E = new TH1D("hEvS_e_E","Electron particles vs Energy; Electron E ; Number of Particles", 50, 0, 500);
-    hEvS_e_E_S = new TH1D("hEvS_e_E_S","Electron particles vs Energy; Electron E ; Number of Particles", 50, 0, 500);
+    hEvS_e_E = new TH1D("hEvS_e_E","Distribution of Lepton Energies, Truth vs Smeared; Electron E ; Number of Particles", 50, 0, 500);
+    hEvS_e_E_S = new TH1D("hEvS_e_E_S","Distribution of Lepton Energies, Truth vs Smeared; Electron E ; Number of Particles", 50, 0, 500);
 
     hEv_HReco_M_S = new TH1D("hEv_HReco_M_S","Smeared Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 100, 0, 200);
     hEv_ZReco_M_S = new TH1D("hEv_ZReco_M_S","Smeared Z Mass; Mass of Reconstructed Particle; Number of Particles", 100, 0, 200);

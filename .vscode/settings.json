@@ -68,5 +68,6 @@
         "typeinfo": "cpp",
         "variant": "cpp",
         "CutScan.C": "cpp"
-    }
+    },
+    "python.pythonPath": "/usr/bin/python"
 }

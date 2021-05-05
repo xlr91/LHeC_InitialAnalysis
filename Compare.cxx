@@ -362,6 +362,8 @@ void Compare(){
         h1 -> SetLineColor(2);
         h1 -> SetFillColor(2);
         h2 -> SetLineColor(4);
+        h1 -> SetStats(kFALSE);
+        h2 -> SetStats(kFALSE);
 
         //h2-> SetFillColor(7);
         //h2-> SetFillColorAlpha(7,0);
@@ -370,7 +372,7 @@ void Compare(){
         h1 -> Draw("hist");
         h2 -> Draw("same hist");
 
-        legend = new TLegend(0.1,0.8,0.25,0.9);
+        legend = new TLegend(0.75,0.8,0.9,0.9);
         legend->SetHeader("Histogram Markers","C"); // option "C" allows to center the header
         legend->AddEntry(h1, "Signal");
         legend->AddEntry(h2, "Smearing");
@@ -477,6 +479,14 @@ void Compare(){
             }
             h_MassWindowOpt -> Draw();
             c1-> Write("MassWindow");
+
+            /*
+            TEfficiency * pEff = new TEfficiency("eff","my efficiency;x;#epsilon",2,0,2);
+            pEff -> SetPassedEvents(1, h1->Integral(binxstklow, binxstkhigh));
+            pEff -> SetTotalEvents(1, 13.4);
+            
+            pEff -> Write();
+            */
         }
         std::cout<< " " << std::endl;
 
@@ -484,9 +494,8 @@ void Compare(){
         
     }
 
-    
-    
-    
+
+
 
 
     OutputFile -> Close();
