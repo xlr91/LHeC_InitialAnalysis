@@ -6,6 +6,7 @@ bool suppress4e = false;
 bool suppress4mu = false;
 bool suppress2e2mu = false;
 bool suppress2mu2e = false;
+//use the above to choose if a particular subdecay channel should not be factored in the analysis
 
 bool LepPass(GenParticle* lep_b, double ptsmear = 0){
     //Checks if the electron can be seen by the detector or not
@@ -46,6 +47,7 @@ std::vector<double> Electron_Reco(TLorentzVector scat){
 
 
 std::vector<double> Hadron_Reco(TLorentzVector had){
+    //Hadronic Reconstruction method
     std::vector<double> output;
     double rootS = 1300;
     double Ee = 60;
@@ -60,29 +62,39 @@ std::vector<double> Hadron_Reco(TLorentzVector had){
     Qh2 = pht * pht / (1-yh);
     xh = Qh2 / (rootS * rootS * yh);
     output = {Qh2, xh, yh}; 
+    
     return output;
-
 }
 
 
 std::tuple<std::vector<TLorentzVector>,int, std::vector<TLorentzVector>,int> ZZ_Reco(std::vector<GenParticle*> e_list, std::vector<TLorentzVector> e_vec_smear){
-    //returns a list of TLORENTZVECOTR which is [Z, Z*]
+    /*
+        ZZ_Reco is the function that reconstructs TLorentzVector of the Z and Z* boson
+        It does it for both truth particles and the smeared particles
+        takes in a list of leptons and a vector of LorentzVectors
+        and outputs:
+            - [Z Lorentzvector, Z* Lorentzvector] (unsmeared)
+            - leading PID used to identify leading lepton pair (unsmeared)
+            - [Z Lorentzvector, Z* Lorentzvector] (smeared)
+            - Leading PID (smeared)
+    */
     int neg = 0;
     int pos = 2;
     int ind, PIDLead, PIDLead_s;
-
     double Zmass = 91.1876;
 
     std::vector<TLorentzVector> e_vecs, e_vecs_s, Ztry, Ztry_s, ans, ans_s;
     std::vector<double> Ztrymass, Ztrymass_s;
     std::vector<GenParticle*> e_list_sorted;
     std::vector<int> leptry;
+    TLorentzVector V_temp;
+
     e_vecs.resize(e_list.size()); //truth vectors
     e_vecs_s.resize(e_list.size()); //smeared vectors
     e_list_sorted.resize(e_list.size());
-    TLorentzVector V_temp;
+    
 
-
+    //arrange the list of leptons to [l-, l-, l+, l+] and sets necessary veectors
     for(int i = 0; i < e_list.size(); ++i){
         if(e_list.at(i) -> Charge == -1){
             ind = neg;
@@ -98,12 +110,13 @@ std::tuple<std::vector<TLorentzVector>,int, std::vector<TLorentzVector>,int> ZZ_
         e_list_sorted.at(ind) = e_list.at(i);
     }
   
+    //Trying out different combinations of -+ pairs
+    //the if statement is for 2l2', checks if the -+ pairs are of the same flavor
     Ztry.push_back(e_vecs[0] + e_vecs[2]);
     Ztry_s.push_back(e_vecs_s[0] + e_vecs_s[2]);
     if((abs(e_list_sorted.at(0) -> PID)) == (abs(e_list_sorted.at(2) -> PID))){
         leptry.push_back(1);
     } else leptry.push_back(0);
-
 
     Ztry.push_back(e_vecs[1] + e_vecs[3]);
     Ztry_s.push_back(e_vecs_s[1] + e_vecs_s[3]);
@@ -124,18 +137,16 @@ std::tuple<std::vector<TLorentzVector>,int, std::vector<TLorentzVector>,int> ZZ_
     } else leptry.push_back(0);
     
 
+    //Determines invariant masses of the Z boson trials
+    //If the leptons are of different favor, sets mass of Z to be 0
     for(int o = 0; o < Ztry.size(); ++o){
-        
         if(leptry.at(o) == 1){
             Ztrymass.push_back(Ztry[o].M());
             Ztrymass_s.push_back(Ztry_s[o].M());
-
         } else {
             Ztrymass.push_back(0);
             Ztrymass_s.push_back(0);
         }
-        
-        //if(Debug) std::cout << leptry.at(o) << std::endl;
     }
 
     double curr = 0;
@@ -144,6 +155,7 @@ std::tuple<std::vector<TLorentzVector>,int, std::vector<TLorentzVector>,int> ZZ_
     int currind_s = 0;
     double val, val_s;
 
+    //Deterimines which Z boson has the mass closest to m_Z
     for(int k = 0; k < Ztrymass.size(); ++k){
         val = Ztrymass[k];
         if(abs(Zmass - val) < abs(Zmass - curr)){
@@ -158,7 +170,7 @@ std::tuple<std::vector<TLorentzVector>,int, std::vector<TLorentzVector>,int> ZZ_
         }
     }
 
-
+    //uses result to set the correct Z and Z* pairs, for truth and smeared
     switch (currind){
         case 0:
             ans.push_back(Ztry[0]);
@@ -213,13 +225,14 @@ std::tuple<std::vector<TLorentzVector>,int, std::vector<TLorentzVector>,int> ZZ_
             break;
     }
 
-
     return std::make_tuple(ans, PIDLead, ans_s, PIDLead_s);
 }
 
 
 
 double ptSmear(TRandom* gR, GenParticle* lep_s){
+    //Smears the pt using a random generator
+    
     double res;
     res = (lep_s -> PT) * (lep_s -> PT) * 8e-4;
 
@@ -228,19 +241,16 @@ double ptSmear(TRandom* gR, GenParticle* lep_s){
 }
 
 double ESmear(TRandom* gR, GenParticle* lep_s){
-    double res, a, b;
+    //Smears the energy E using a random number generator
+    //enclosed are either the CDR values or the updated values
 
-    /*
-    a = 15;
-    b = 2;
-    res = (lep_s -> E) * TMath::Sqrt( ((a * a) / (lep_s -> E)) + (b * b) ) * 1/100;
-    */
-    
-    //a = 15/100;
-    //b = 2/100;
-    a = 20/100;
+    double res, a, b;
+    //a = 12.4/100; //CDR Update
+    //b = 1.9/100;
+    a = 20/100; //CDR Original
     b = 0.14/100; 
     res = (lep_s -> E) * TMath::Sqrt( ((a * a) / (lep_s -> E)) + (b * b) );
+    
     return gR -> Gaus(0, res);
     
 }
@@ -327,7 +337,6 @@ int main(int argc, char* argv[]) {
     hEv_nue_MET_eta = new TH2D("hEv_nue_MET_eta","Eta Distribution of Missing Particle vs Electron Neutrino; #nu_{e}; Missing Particle", 100, -5.0, 10.0, 100, -5.0, 10.0);
     hEv_nue_MET_Et = new TH2D("hEv_nue_MET_Et","Et Distribution of Missing Particle vs Electron Neutrino; #nu_{e}; Missing Particle", 50, 0, 250, 50, 0, 250);
 
-
     hEv_debugMP_Pz_E = new TH2D("hEv_debugMP_Pz_E","Checking E vs Pz distribution for Nue-MP", 100, -2000, 0, 100, 0, 2000);
 
     //hEv_HReco_M = new TH1D("hEv_HReco_M","Reconstructed Higgs Mass; Mass of Reconstructed Particle; Number of Particles", 50, 0, 400);
@@ -337,19 +346,16 @@ int main(int argc, char* argv[]) {
     hEv_ZZReco_M = new TH1D("hEv_ZZReco_M","Reconstructed Z and Z* Mass; Mass of Reconstructed Particle; Number of Particles", 100, 0, 200);
     hEv_ZCurr_M = new TH1D("hEv_ZCurr_M","Reconstructed 4l Mass of Background; Mass of Reconstructed Particle (GeV); Number of Particles", 100, 0, 1000);
     
-    
     hEv_jet_eta = new TH1D("hEv_jet_eta","Scattered quark  vs pseudorapidity; Jet #eta; Number of Particles", 50, -5.0, 5.0);
     hEv_H_eta = new TH1D("hEv_H_eta","Higgs vs pseudorapidity; Higgs #eta; Number of Particles", 50, -5.0, 5.0);
     
+    //Reconstructed histograms
     hEvR_recoQ2_elec_hadr = new TH2D("hEvR_recoQ2_elec_hadr","2D Histogram of log_{10} Q^{2}, Hadron vs Electron Method; log_{10} Q^{2} Electron; log_{10} Q^{2} Hadron", 50, 0, 6.0, 50, 0., 6.);
     hEvR_recox_elec_hadr = new TH2D("hEvR_recox_elec_hadr","2D Histogram of log_{10} x, Hadron vs Electron Method; log_{10} x Electron; log_{10} x Hadron", 50, -7, 0, 50, -7., 0.);
     hEvR_recoy_elec_hadr = new TH2D("hEvR_recoy_elec_hadr","2D Histogram of Log y, Hadron vs Electron Method; log_{10} y Electron; log_{10} y Hadron", 50, -3, 0, 50, -3., 0.);
-    //hEvR_recoy_elec_hadr = new TH2D("hEvR_recoy_elec_hadr","2D Histogram of Logy, Hadron vs Electron Method; log_{10} y Electron; log_{10} y Hadron", 50, -0.3, 0.3, 50, -1.5, 0.);
     hEvR_recoQ2_elec_hadr_fit = new TF1("hEvR_recoQ2_elec_hadr_fit", "[0]+[1]*x",0,6);
     hEvR_recox_elec_hadr_fit = new TF1("hEvR_recox_elec_hadr_fit", "[0]+[1]*x",-7,0);
     
-
-
     hEvR_ereco_Q2 = new TH1D("hEvR_ereco_Q2","log_{10} Q^{2} values for Electron Reconstruction Method; log_{10} Q^{2}; Events", 50, 0, 6);
     hEvR_ereco_x = new TH1D("hEvR_ereco_x","log_{10} x values for Electron Reconstruction Method; log_{10} x; Events", 50, -7, 0);
     hEvR_ereco_y = new TH1D("hEvR_ereco_y","Log y values for Electron Reconstruction Method; log_{10} y; Events", 50, -3, 0);
@@ -362,14 +368,14 @@ int main(int argc, char* argv[]) {
     hEvR_EPz = new TH1D("hEvR_EPz","Doing sum of E-Pz ; Sum of E-Pz; Events", 50, 0, 5000);
 
     hEvR_hreco_x_Q2 = new TH2D("hEvR_hreco_x_Q2","2D Histogram of Q2 vs x for hadron method; x; Q^{2}", 50, 0, 0.2, 50, 0, 45000);
-
-    
+  
+    //Cuts analysis
     hEvC_Zstar = new TH1D("hEvC_Zstar","Z* Mass Cut (Less than); Z* Cut; Number of Particles below Z* cut, between 120-130", 100, 0, 100);
     hEvC_Logy = new TH1D("hEvC_Logy","Log y Cut (Less than); Log y Cut; Number of Particles below log y cut, between 120-130", 100, -3, 0);
 
+    //Smearing plots
     hEvS_e_pt = new TH1D("hEvS_e_pt","Electron particles vs transverse momentum; Electron p_{T} ; Number of Particles", 50, 0, 150);
     hEvS_e_pt_S = new TH1D("hEvS_e_pt_S","Electron smeared particles vs transverse energy; Electron p_{T} ; Number of Particles", 50, 0, 150);
-
     hEvS_e_E = new TH1D("hEvS_e_E","Distribution of Lepton Energies, Truth vs Smeared; Electron E ; Number of Particles", 50, 0, 500);
     hEvS_e_E_S = new TH1D("hEvS_e_E_S","Distribution of Lepton Energies, Truth vs Smeared; Electron E ; Number of Particles", 50, 0, 500);
 
@@ -378,9 +384,6 @@ int main(int argc, char* argv[]) {
     hEv_ZstarReco_M_S = new TH1D("hEv_ZstarReco_M_S","Smeared Z* Mass; Mass of Reconstructed Particle; Number of Particles", 100, 0, 200);
 
     
-    
-
-
     //------------------------------------
 
     // Run the selection
@@ -441,8 +444,6 @@ int main(int argc, char* argv[]) {
     aPr_e_eta -> Write(); 
     aPr_e_Et -> Write(); 
 
-    std::cout << "Write Test 0.2" << std::endl;
-
 
     OutputFile->cd("4eEventLevel");
 
@@ -470,23 +471,18 @@ int main(int argc, char* argv[]) {
     hEv_nue_MET_Phi -> Write();
     hEv_debugMP_Pz_E -> Write();
 
-    
-
     hEv_HReco_M -> Write();
     hEv_ZReco_M -> Write();
     hEv_ZstarReco_M -> Write();
     hEv_ZZReco_M -> Write();
     hEv_ZCurr_M -> Write();
 
-
     hEv_jet_eta -> Write();
     hEv_H_eta -> Write();
   
 
-
     OutputFile->cd("4eEventLevel/KinematicReco");
     
-
     std::cout << "Entries of Q2" << hEvR_recoQ2_elec_hadr -> GetEntries() << std::endl;
     std::cout << "Correlation Factor of Q2: " << hEvR_recoQ2_elec_hadr -> GetCorrelationFactor() << std::endl;
 
@@ -497,13 +493,10 @@ int main(int argc, char* argv[]) {
     hEvR_recoQ2_elec_hadr_fit -> Draw();
     hEvR_recoQ2_elec_hadr_fit -> Write();
 
-    
     hEvR_recoQ2_elec_hadr -> SetStats(0);
     hEvR_recoQ2_elec_hadr -> Draw();
     hEvR_recoQ2_elec_hadr_fit -> Draw("same");
     hEvR_recoQ2_elec_hadr -> Write();
-
-    
 
     hEvR_recox_elec_hadr_fit->SetParameters(0.,1.);
     hEvR_recox_elec_hadr_fit->FixParameter(0, 0);
@@ -516,12 +509,6 @@ int main(int argc, char* argv[]) {
     hEvR_recox_elec_hadr -> Draw();
     hEvR_recox_elec_hadr_fit -> Draw("same");
     hEvR_recox_elec_hadr -> Write();
-    
-
-
-
-    
-
     
     std::cout << "Correlation Factor of x: " << hEvR_recox_elec_hadr -> GetCorrelationFactor() << std::endl;
     hEvR_recoy_elec_hadr -> Write();
@@ -540,12 +527,13 @@ int main(int argc, char* argv[]) {
     hEvR_EPz -> Write();
     hEvR_hreco_x_Q2 -> Write();
 
+
     OutputFile->cd("4eEventLevel/CutsAnalysis");
 
     hEvC_Zstar -> Write();
     hEvC_Logy -> Write();
 
-    OutputFile->cd("4eEventLevel/CutsAnalysis/Example");
+    OutputFile->cd("4eEventLevel/CutsAnalysis/Example"); //legacy
 
     OutputFile->cd("4eEventLevel/Smearing");
     hEvS_e_pt -> Write();
@@ -562,16 +550,12 @@ int main(int argc, char* argv[]) {
     hEv_ZReco_M_S -> Write();
     hEv_ZstarReco_M_S -> Write();
 
-
-	for(int n = 0; n < nCuts; ++n) {
+	for(int n = 0; n < nCuts; ++n) { //legacy(?)
 		h_varycut.at(n)->Write();
 	}
 
-    std::cout << "Write Test 2" << std::endl;
 
     OutputFile->WriteObject(&cut_values, "cut_values");
-
-
     OutputFile->Close();
 
     std::cout << "Tidy..." << std::endl;
@@ -608,19 +592,22 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
     Long64_t numberOfEntries = treeReader->GetEntries();
     if (Debug) numberOfEntries = 1000;
 
-    bool is4e, is4mu, is2e2mu, is2mu2e, good4e, good4mu, good2e2mu, good2mu2e; //is the event a 4e event?
-    bool isall4eseen, isall4museen, isall2e2museen, isall2mu2eseen; //can all electrons in the event be seen?
+    bool is4e, is4mu, is2e2mu, is2mu2e;//is the event a 4e event?
+    bool good4e, good4mu, good2e2mu, good2mu2e; //is the event a 4e event _and_ were all particles seen?
+    bool isall4eseen, isall4museen, isall2e2museen, isall2mu2eseen; //can all leptons in the event be seen?
     bool goodjet; //is this jet a good jet? (Does its mass *not* correspond to a lepton)
-    bool isexactly4 = true;
+    bool isexactly4 = true; //are there exactly 4 leptons in the event? (gets rid of pesky annoying bad data)
 
     int nSelected = 0;
     int ecount = 0;
     int mucount = 0;
 
+    //changes the weigting factor from the terminal command, reads it here
     float bscale = 8.9e-6 * 10;
     float sscale = 1.34e-5 * 10; 
     float zscale = 2.41e-6 * 100;
     float usescale;
+
     if(Ident == "s"){
         usescale = sscale;
     }
@@ -634,20 +621,20 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         usescale = 1;
     }
 
-    std::cout << "-------------------------------------------------------------"  << std::endl;
-    std::cout << "Input: " << numberOfEntries << " events to process, Weight: " << usescale << std::endl;
+    
 
     //Make random number generator
     gRandom = new TRandom3();
     gRandom -> SetSeed(1);
     std::vector<double> ePt_deteff, ePt_noeff, eE_deteff, eE_noeff;
+    double temppts, tempEs; //stores the temporarily generated random number
 
-    double temppts, tempEs;
-
+    std::cout << "-------------------------------------------------------------"  << std::endl;
+    std::cout << "Input: " << numberOfEntries << " events to process, Weight: " << usescale << std::endl;
 
     // Loop over all events
     for(Int_t entry = 0; entry < numberOfEntries; ++entry) { 
-    //for(Int_t entry = 11000; entry < 12000; ++entry) { ///CHANGE THIS BACK
+    //for(Int_t entry = 11000; entry < 12000; ++entry) { ///Used for debugging
 
         // Load selected branches with data from specified event
         treeReader->ReadEntry(entry);
@@ -655,7 +642,6 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         HepMCEvent * event = (HepMCEvent*) bEvent->At(0); 
         const float Event_Weight = usescale; 
         
-
         hEx_EventCount->Fill(0.5, Event_Weight);
         hEx_WeightCount->Fill(0.5,Event_Weight);
 
@@ -682,10 +668,6 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         FourLepton_Vector_S.SetPtEtaPhiM(0.0, 0.0, 0.0, 0.0);
         GenParticle* my_nu;
 
-
- 
-
-
         if( (entry > 0 && entry%1000 == 0) || Debug) {
             std::cout << "-------------------------------------------------------------"  << std::endl;
             std::cout << "Processing Event Number =  " << entry  << std::endl;
@@ -696,9 +678,8 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         // Particle Loop (Debug only)
         //------------------------------------------------------------------
 
-        if (Debug){ // switch false with debug
+        if (Debug){ // Prints out the particle info during debug mode
             std::cout << "Event_Weight: " <<  Event_Weight << std::endl;
-            
             for(int i = 0; i < 4; ++i){ 
             //for(int i = 0; i < bParticle->GetEntriesFast(); ++i){   
                 GenParticle* p_Particle = (GenParticle*) bParticle->At(i);
@@ -712,6 +693,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         //------------------------------------------------------------------
         for(int i = 0; i < bJet->GetEntriesFast(); ++i) {
 
+            //Sets and read the jets
             Jet* jet = (Jet*) bJet->At(i);
 
             TLorentzVector Vec_Jet;
@@ -723,7 +705,7 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
             if(Debug) std::cout << "Jet " << i << " pT = " << jet->PT << " eta = " << jet->Eta << " phi = " << jet->Phi << " mass = " << jet->Mass << " flavour = " << jet->Flavor << std::endl;
 
-            //Jet Cuts
+            //Jet Cuts, check if the jet is good or not
             goodjet = true;
             for(int j = 0; j < bTruthLepton->GetEntriesFast(); ++j) {
                 GenParticle* lep = (GenParticle*) bTruthLepton->At(j);
@@ -750,9 +732,10 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         // Lepton Loops
         //------------------------------------------------------------------
 
-        //first pass to check if the particles/event is good or not
+        //First lepton loop to check if the particles/event is good or not
         for(int i = 0; i < bTruthLepton->GetEntriesFast(); ++i) {
 
+            //sets and reads the leptons 
             GenParticle* lep = (GenParticle*) bTruthLepton->At(i);
 
             if(Debug) {
@@ -763,13 +746,13 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
             TLorentzVector Vec_Lepton;
             Vec_Lepton.SetPtEtaPhiM(lep->PT,lep->Eta,lep->Phi,lep->Mass);
             
-
             // Look for electrons or muons
             if( abs(lep->PID) == 11 || abs(lep->PID) == 13 ) {
                 hEx_Lepton_Pt->Fill( Vec_Lepton.Pt(), Event_Weight );  
             }
 
-            if( abs(lep->PID) == 11) {
+            if( abs(lep->PID) == 11) { //electrons only
+                //smear the electrons and store them 
                 temppts = ptSmear(gRandom, lep);
                 tempEs = ESmear(gRandom, lep);
 
@@ -780,32 +763,28 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 eE_noeff.push_back(lep->E);
                 
                 if(Debug) std::cout<<"smearing pt: "<< temppts << std::endl;
+
                 hPr_e_eta -> Fill( lep-> Eta ,Event_Weight);
-                hPr_e_Et -> Fill( TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)), Event_Weight);
-                
+                hPr_e_Et -> Fill( TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)), Event_Weight);                
                 aPr_e_eta -> FillWeighted(LepPass(lep, temppts), Event_Weight, lep->Eta);
                 aPr_e_Et -> FillWeighted(LepPass(lep, temppts), Event_Weight, TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)));
 
                 //check if all 4e events seen 
                 if(!LepPass(lep, temppts)){ isall4eseen = false; isall2e2museen = false; isall2mu2eseen = false;}
-                is4mu = false;  
+                is4mu = false;  //if it contains an electron, definitely not 4mu
                 ecount++;
-
-
-                
             }
 
-            if( abs(lep->PID) == 12) {
+            if( abs(lep->PID) == 12) { //electron nneutrinos
                 if (Debug) std::cout << " Nue E, Px, Py, Pz, P: " << Vec_Lepton.E() << " " << Vec_Lepton.Px() << " " << Vec_Lepton.Py() << " " << Vec_Lepton.Pz() << " " << Vec_Lepton.P()<<  std::endl;
                 if (Debug) std::cout << " Nue theta, sintheta, costheta: "<<Vec_Lepton.Theta() <<  " " << TMath::Sin(Vec_Lepton.Theta()) << " " << TMath::Cos(Vec_Lepton.Theta()) <<std::endl;
                 hPr_nue_eta -> Fill( lep-> Eta ,Event_Weight);
                 hPr_nue_Et -> Fill( TMath::Sqrt( TMath::Power(lep -> PT, 2) + TMath::Power(lep -> Mass, 2)), Event_Weight);
             }
 
-            //if it contains a muon, its definitely not a 4e event 
-            if (abs(lep -> PID) == 13){
+            if (abs(lep -> PID) == 13){ //muons
                 if(!LepPass(lep)) {isall4museen = false ;  isall2e2museen = false; isall2mu2eseen = false;}  
-                is4e = false;
+                is4e = false; //if it contains muon, definitely not electron
                 mucount++;
 
                 temppts = ptSmear(gRandom, lep);
@@ -819,100 +798,80 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
             }
         } // Lepton Loop
 
+        //Cleanup and suppression checks
         if(ecount == 2 && mucount == 2) {is2e2mu = true; is2mu2e = true;}
-        
         if(suppress4e) is4e = false;
         if(suppress4mu) is4mu = false;
         if(suppress2e2mu) is2e2mu = false;
         if(suppress2mu2e) is2mu2e = false;
 
-        
-
-        if (is4e || is4mu || is2e2mu || is2mu2e){
-            TLorentzVector Debug_MP;
-            std::vector<GenParticle*> e_par_list;
-            //std::vector<GenParticle*> e_par_list_full;
-            std::vector<TLorentzVector> e_vec_list;
+        if (is4e || is4mu || is2e2mu || is2mu2e){ //only if the event is actually a known subchannel 
+            
+            //Initialise vectors
+            TLorentzVector Debug_MP; //legacy
+            std::vector<GenParticle*> e_par_list; //list of observed leptons
+            std::vector<TLorentzVector> e_vec_list; //list of vectors of those observed leptons
+            
             if (Debug) {
                 if(is4e) std::cout << "This is a 4e event. Seen: " << isall4eseen << std::endl;  
                 if(is4mu) std::cout << "This is a 4mu event. Seen: " << isall4museen << std::endl;  
                 if(is2e2mu || is2mu2e) std::cout << "This could be a 2e2mu or 2mu2e event. Seen: " << isall2e2museen << std::endl;
-                
             }
             
 
+            //bit to fill in eta plots
             if ((isall4eseen || isall4museen || isall2e2museen || isall2mu2eseen) && Missing_Particle.Eta() != 0) hEv_jet_eta -> Fill(Missing_Particle.Eta(), Event_Weight);
-            //into lepton for loop again, this time its only  4e events
             bool interestingjet = true;
             if(Missing_Particle.Eta() == 0) interestingjet = false;
 
-
-            int lepint_temp = 0;
+            int lepint_temp = 0; //keeps track to recall which lepton is which, for smearing purposes
             for(int i = 0; i < bTruthLepton->GetEntriesFast(); ++i){
                 GenParticle* lep_e = (GenParticle*) bTruthLepton->At(i);
                 TLorentzVector Vec_Lepton_e;
                 TLorentzVector Vec_Lepton_e_S;
 
-                //std::cout<<lepint_temp <<std::endl;
                 Vec_Lepton_e.SetPtEtaPhiM(lep_e->PT,lep_e->Eta,lep_e->Phi,lep_e->Mass); //change this for smearing
                 
-
-                if( abs(lep_e->PID) == 12) {
+                if( abs(lep_e->PID) == 12) { //neutrino
                     hEv_nue_eta_nocuts -> Fill( lep_e-> Eta ,Event_Weight);
                     hEv_nue_Et_nocuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);
                     if (isall4eseen || isall4museen || isall2e2museen || isall2mu2eseen){
-                        my_nu = lep_e;
                         //fill the electron neutrino comparison with missing energy
+                        my_nu = lep_e;                        
                         if(interestingjet) hEv_nue_eta_wicuts -> Fill( -(lep_e-> Eta) ,Event_Weight);
                         hEv_nue_Et_wicuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);
-
                         hEv_nue_eta_pt_wicuts -> Fill(lep_e-> Eta,  lep_e-> PT);
                     }
                 }
                 
+                //lepton bits only here
                 if( abs(lep_e->PID) == 11 || abs(lep_e->PID) == 13){
+                    //histogram stuff
                     hEv_e_eta_nocuts -> Fill( -(lep_e -> Eta) , Event_Weight);
-                    hEv_e_Et_nocuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);
-
-                    //hEvS_e_pt_S -> Fill(TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)) + ePt_deteff.at(lepint_temp), Event_Weight);
-                    
-                    
-                    
-                    
-
+                    hEv_e_Et_nocuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);                                            
                     if(Debug){
                         std::cout << "Lepton Number " << i << "vector loc" << lepint_temp <<  std::endl;
                         std::cout << "smeared pT: " << lep_e -> PT  + ePt_deteff.at(lepint_temp) << std::endl;
                         std::cout << "smeared E: " << lep_e -> E << " " << eE_deteff.at(lepint_temp) << std::endl;
                     } 
-                
-
                     aEv_e_eta -> FillWeighted(LepPass(lep_e, ePt_deteff.at(lepint_temp)), Event_Weight, lep_e->Eta);
                     aEv_e_Et -> FillWeighted(LepPass(lep_e, ePt_deteff.at(lepint_temp)), Event_Weight, TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)));
 
-
-                    //e_par_list_full.push_back(lep_e);
-
+                    //setting up smeared stuff and list of leptons
                     e_par_list.push_back(lep_e);
-
-                    //Vec_Lepton_e_S.SetPtEtaPhiE(lep_e -> PT  + ePt_deteff.at(lepint_temp) ,lep_e->Eta,lep_e->Phi, lep_e->E + eE_deteff.at(lepint_temp)); //change this for smearing (ORIGINAL)
                     if(abs(lep_e->PID) == 11){
-                    Vec_Lepton_e_S.SetPxPyPzE(lep_e -> Px + eE_deteff.at(lepint_temp), lep_e -> Py + eE_deteff.at(lepint_temp), lep_e -> Pz + eE_deteff.at(lepint_temp), lep_e -> E + eE_deteff.at(lepint_temp)); //change this for smearing (NEW)
+                        Vec_Lepton_e_S.SetPxPyPzE(lep_e -> Px + eE_deteff.at(lepint_temp), lep_e -> Py + eE_deteff.at(lepint_temp), lep_e -> Pz + eE_deteff.at(lepint_temp), lep_e -> E + eE_deteff.at(lepint_temp)); //change this for smearing (NEW)
                     }
-
                     if(abs(lep_e->PID) == 13){
-                    Vec_Lepton_e_S.SetPxPyPzE(lep_e -> Px + ePt_deteff.at(lepint_temp), lep_e -> Py + ePt_deteff.at(lepint_temp), lep_e -> Pz + ePt_deteff.at(lepint_temp), lep_e -> E + ePt_deteff.at(lepint_temp)); //change this for smearing (NEW)
+                        Vec_Lepton_e_S.SetPxPyPzE(lep_e -> Px + ePt_deteff.at(lepint_temp), lep_e -> Py + ePt_deteff.at(lepint_temp), lep_e -> Pz + ePt_deteff.at(lepint_temp), lep_e -> E + ePt_deteff.at(lepint_temp)); //change this for smearing (NEW)
                     }
-
                     e_vec_list.push_back(Vec_Lepton_e_S);
 
-
+                    //if the leptons are observed _only_
                     if(LepPass(lep_e, ePt_deteff.at(lepint_temp))){
                         hEv_e_eta_wicuts -> Fill( lep_e -> Eta , Event_Weight);
                         hEv_e_Et_wicuts -> Fill( TMath::Sqrt( TMath::Power(lep_e -> PT, 2) + TMath::Power(lep_e -> Mass, 2)), Event_Weight);   
-                        
-
-                        
+                                                
                         Missing_Particle = Missing_Particle - Vec_Lepton_e;
                         FourLepton_Vector = FourLepton_Vector + Vec_Lepton_e;
                         FourLepton_Vector_S = FourLepton_Vector_S + Vec_Lepton_e_S;
@@ -921,13 +880,12 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                     hEv_e_eta_pt -> Fill(lep_e -> Eta, lep_e -> PT);
                     lepint_temp++;
                 }
-
             }
 
             hEx_EventCount -> Fill(1.5, Event_Weight);
 
-            
-            // Event santiy check here. It needs to be 4 events, and it needs to be 2 pos and 2 neg
+            //More event checks here
+            //is the event composed of _exactly_ 4 leptons?
             isexactly4 = true;
             if (e_par_list.size() != 4){
                 isall4eseen = false;
@@ -936,11 +894,9 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 isall2mu2eseen = false;
                 isexactly4 = false;
             } 
-
+            //is the event electrically neutral?
             int sanityp = 0;
             int sanityn = 0;
-
-            //checks for neutral charge
             for(int i = 0; i < e_par_list.size(); ++i){
                 if(e_par_list[i] -> Charge == -1){
                     sanityn++;
@@ -949,7 +905,6 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                     sanityp++;
                 }
             }
-
             if(!(sanityp == 2 && sanityn == 2)){
                 isall4eseen = false;
                 isall4museen = false;
@@ -957,7 +912,6 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 isall2mu2eseen = false;
                 isexactly4 = false;
             }
-            
             
             if(isall4eseen && is4e) good4e = true;
             if(isall4museen && is4mu) good4mu = true;
@@ -984,7 +938,6 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
             if(isall2mu2eseen && is2mu2e) good2mu2e = true;
 
 
-
             if(Debug) std::cout << "event seen: " << good4e << good4mu << good2e2mu << good2mu2e << std::endl;
             if(Debug) std::cout << "event verdict: " << is4e << is4mu << is2e2mu << is2mu2e << std::endl;
 
@@ -993,25 +946,24 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
             if(is2e2mu) hEx_EventCount -> Fill(8.5, Event_Weight);
             if(is2mu2e) hEx_EventCount -> Fill(9.5, Event_Weight);
 
-            if (good4e || good4mu || good2e2mu || good2mu2e) {
+            if (good4e || good4mu || good2e2mu || good2mu2e) { //only if the events are observable and known
                 if(is4e)  hEx_EventCount -> Fill(2.5, Event_Weight);
                 if(is4mu) hEx_EventCount -> Fill(3.5, Event_Weight);
                 if(is2e2mu) hEx_EventCount -> Fill(4.5, Event_Weight);
                 if(is2mu2e) hEx_EventCount -> Fill(5.5, Event_Weight);
-                
-                TLorentzVector my_nu_vec;
-                
-                my_nu_vec.SetPtEtaPhiM(my_nu->PT,my_nu->Eta,my_nu->Phi,my_nu->Mass);
-                
-                Debug_MP =   my_nu_vec - Missing_Particle;
 
                 if(is4e&&Debug) std::cout << "4e" << std::endl;
                 if(is4mu&&Debug) std::cout << "4mu" << std::endl;
                 if(is2mu2e&&Debug) std::cout << "2mu2e" << std::endl;
                 if(is2e2mu&&Debug) std::cout << "2e2mu" << std::endl;
-
+                
+                TLorentzVector my_nu_vec;
+                my_nu_vec.SetPtEtaPhiM(my_nu->PT,my_nu->Eta,my_nu->Phi,my_nu->Mass);
+                
+                Debug_MP =   my_nu_vec - Missing_Particle;
                 TLorentzVector Hadronic_Vector = -Missing_Particle;
 
+                //reconstructoin of kinematics (electron/hadron method) and ZZ boson 
                 std::vector<double> E_Reco_Lst = Electron_Reco(my_nu_vec);
                 std::vector<double> H_Reco_Lst = Hadron_Reco(Hadronic_Vector);
                 std::vector<TLorentzVector> Z_Reco_Lst = std::get<0>(ZZ_Reco(e_par_list, e_vec_list)); 
@@ -1020,11 +972,9 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 if(Debug) std::cout << "PID Leader: " << std::get<1>(ZZ_Reco(e_par_list, e_vec_list)) << " " 
                 << std::get<3>(ZZ_Reco(e_par_list, e_vec_list)) << std::endl;
 
-                
-
                 double sumEPz = my_nu_vec.E() - my_nu_vec.Pz() + ( Hadronic_Vector.E() - Hadronic_Vector.Pz());
                 
-                //Z* and logycut cut analysis// My Version
+                //Z* and logycut cut analysis// My Version (legacy)
                 for(int zzz = 1; zzz <= hEvC_Zstar -> GetNbinsX(); zzz++){
                     if( 120 <= FourLepton_Vector.M() && FourLepton_Vector.M() <= 130){
                         if(Z_Reco_Lst[1].M() < hEvC_Zstar->GetBinLowEdge(zzz)){
@@ -1042,19 +992,11 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                     std::cout << "H-Reco Q2: " << H_Reco_Lst[0] << " x: " << H_Reco_Lst[1] << " y: " << H_Reco_Lst[2] << std::endl;
                     std::cout << "Reco Higgs Mass?: " << FourLepton_Vector.M() << std::endl;
                     std::cout << "SumPz: " << sumEPz << std::endl;
-
                     std::cout << "ELIST CHECK " << e_par_list[0] -> Charge  << std::endl;
-                    
                     for(int oo = 0; oo < 2; ++oo){
                         std::cout << Z_Reco_Lst[oo].M() << std::endl;
                     }
-
-                    //std::cout << "Random Number: " << ptSmear(gRandom) << std::endl;
-
                 }
-
-
-
                 
                 hEv_MET_eta -> Fill(Missing_Particle.Eta() ,Event_Weight);
                 hEv_MET_Et -> Fill(Missing_Particle.Pt() ,Event_Weight); //pt = et for neutrino
@@ -1079,14 +1021,10 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
 
                 hEv_H_eta -> Fill(-(FourLepton_Vector.Eta()), Event_Weight);
     
-
-
                 //try{
                 hEvR_recoQ2_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[0]), TMath::Log10(H_Reco_Lst[0]));
                 hEvR_recox_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[1]), TMath::Log10(H_Reco_Lst[1]));
                 hEvR_recoy_elec_hadr -> Fill(TMath::Log10(E_Reco_Lst[2]), TMath::Log10(H_Reco_Lst[2]));
-
-                
                 
                 hEvR_ereco_Q2 -> Fill(TMath::Log10(E_Reco_Lst[0]), Event_Weight);
                 hEvR_ereco_x -> Fill(TMath::Log10(E_Reco_Lst[1]), Event_Weight);
@@ -1100,8 +1038,6 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                 hEvR_hreco_x_Q2 -> Fill(H_Reco_Lst[1], H_Reco_Lst[0]);
 
                 hEvR_EPz -> Fill(sumEPz, Event_Weight);
-
-
                 
                 for(int indx=0; indx < 4; ++indx){
                     hEvS_e_pt -> Fill(ePt_noeff.at(indx), Event_Weight);
@@ -1109,11 +1045,8 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
                     hEvS_e_E -> Fill(eE_noeff.at(indx), Event_Weight);
                     hEvS_e_E_S ->Fill(eE_noeff.at(indx) + eE_deteff.at(indx), Event_Weight); 
                     if(Debug) std::cout << eE_deteff.at(indx) << std::endl;
-                }
-                
-                    
-            }
-            
+                }                                    
+            }            
         }
 	            
         //------------------------------------------------------------------
@@ -1130,14 +1063,11 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         
             TLorentzVector Vec_V;
             Vec_V.SetPtEtaPhiM(v->PT,v->Eta,v->Phi,v->Mass);
-
-
             
             if (v -> Mass == 125){
                 hPr_H_eta -> Fill( v->Eta, Event_Weight);
             }
             
-
     		// Look for Z bosons (ID = 23)
             if( v->PID == 23 ) {
                 hEx_Z_Pt->Fill( Vec_V.Pt(), Event_Weight );
@@ -1166,4 +1096,3 @@ void Process(ExRootTreeReader * treeReader, TString Ident) {
         eE_noeff.clear();
     } // Loop over all events
 }
-
